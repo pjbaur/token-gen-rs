@@ -1,0 +1,54 @@
+[package]
+name = "token-gen"
+version = "0.1.0"
+edition = "2024"
+description = "Cryptographically secure token generation library"
+license = "MIT"
+authors = ["Paul Baur"]
+keywords = ["token", "auth", "csrf", "api-key", "crypto"]
+categories = ["cryptography", "authentication"]
+repository = "https://github.com/paulbaur/token-gen-rs"
+readme = "README.md"
+documentation = "https://docs.rs/token-gen"
+exclude = ["target/", "proptest-regressions/", "benches/"]
+
+[dependencies]
+# CLI (optional)
+clap = { version = "4", features = ["derive"], optional = true }
+
+# Cryptographic primitives
+rand = "0.9"
+base64 = "0.22"
+sha2 = "0.10"
+hmac = "0.12"
+subtle = "2.5"
+scrypt = "0.11"
+hex = "0.4"
+
+# Error handling
+thiserror = "2"
+
+# Serialization (for CLI JSON output)
+serde = { version = "1", features = ["derive"], optional = true }
+serde_json = { version = "1", optional = true }
+
+# Time handling
+jiff = "0.2"
+
+[features]
+default = []
+cli = ["clap", "serde", "serde_json"]
+
+[[bin]]
+name = "token-gen"
+path = "src/bin/token-gen.rs"
+required-features = ["cli"]
+
+[dev-dependencies]
+proptest = "1"
+serde_json = "1"
+criterion = "0.5"
+
+[[bench]]
+name = "token_bench"
+harness = false
