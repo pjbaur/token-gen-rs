@@ -5,23 +5,42 @@ A cryptographically secure, type-safe token generation library for Rust.
 ## Features
 
 - **Type-safe tokens**: Distinct types for auth tokens, API keys, and CSRF tokens
-- **Builder pattern**: Ergonomic configuration with compile-time guarantees
+- **Builder pattern**: Ergonomic configuration with validation when `generate()` runs
 - **Secure defaults**: OS-backed CSPRNG, constant-time comparison, HMAC-SHA256 signatures
 - **Flexible hashing**: SHA-256 or scrypt for API key storage
-- **Zero runtime dependencies** (aside from well-vetted crypto crates)
+- **Explicit dependency surface**: Crypto, time, and error-handling crates, with CLI dependencies behind the optional `cli` feature
+
+## Requirements
+
+Minimum supported Rust version (MSRV): **Rust 1.85**.
+
+## Feature Flags
+
+| Flag | Description |
+|------|-------------|
+| `cli` | Enables the `token-gen` command-line binary and its Clap/Serde dependencies |
 
 ## Installation
 
+`token-gen` is not currently published on crates.io. From a local checkout, add it by path:
+
 ```bash
-cargo add token-gen
+cargo add token-gen --path /path/to/token-gen-rs
+```
+
+Or add it directly to `Cargo.toml`:
+
+```toml
+[dependencies]
+token-gen = { path = "/path/to/token-gen-rs" }
 ```
 
 ### CLI Installation
 
-To install the command-line tool:
+Install the command-line tool from a local clone:
 
 ```bash
-cargo install token-gen --features cli
+cargo install --path /path/to/token-gen-rs --features cli
 ```
 
 ## Library Usage
@@ -33,18 +52,19 @@ Simple tokens for authentication flows:
 ```rust
 use token_gen::{AuthToken, Format};
 
-// Generate a simple token
 let token = AuthToken::generate(32, Format::Base64Url)?;
-println!("{}", token);
+println!("{token}");
+
+# Ok::<(), token_gen::TokenError>(())
 ```
 
 Expiring tokens with HMAC signatures:
 
 ```rust
-use token_gen::{AuthToken, SecretKey};
 use std::time::Duration;
+use token_gen::{AuthToken, SecretKey};
 
-let secret = SecretKey::from_string("your-secret-key");
+let secret = SecretKey::from_string("replace-with-a-random-secret-at-least-32-bytes")?;
 
 let token = AuthToken::builder()
     .length(32)
@@ -52,9 +72,10 @@ let token = AuthToken::builder()
     .secret_key(&secret)
     .generate()?;
 
-// Verify later
 token.verify(&secret)?;
 assert!(!token.is_expired()?);
+
+# Ok::<(), token_gen::TokenError>(())
 ```
 
 ### API Keys
@@ -70,11 +91,10 @@ let generated = ApiKey::builder()
     .hash_algorithm(HashAlgorithm::Scrypt)
     .generate_with_hash()?;
 
-// Give the key to the user
-println!("Key: {}", generated.key);      // sk_test_xxx
+println!("Key: {}", generated.key);      // sk_test_xxx; give to the user once
+println!("Hash: {}", generated.key_hash); // scrypt:...; store in the database
 
-// Store the hash in your database
-println!("Hash: {}", generated.key_hash); // scrypt:14:8:1:...
+# Ok::<(), token_gen::TokenError>(())
 ```
 
 | Key Type | Prefix | Example |
@@ -83,11 +103,20 @@ println!("Hash: {}", generated.key_hash); // scrypt:14:8:1:...
 | `Secret` | `sk` | `sk_test_xxx` |
 | `Public` | `pk` | `pk_staging_xxx` |
 
-Verify a key against stored hash:
+Verify a key against its stored hash:
 
 ```rust
-let key: ApiKey = "sk_test_abc123".parse()?;
-let valid = key.verify(&stored_hash);
+use token_gen::{ApiKey, ApiKeyType, Environment};
+
+let generated = ApiKey::builder()
+    .key_type(ApiKeyType::Secret)
+    .environment(Environment::Test)
+    .generate_with_hash()?;
+let key: ApiKey = generated.key.to_string().parse()?;
+
+assert!(key.verify(&generated.key_hash));
+
+# Ok::<(), token_gen::TokenError>(())
 ```
 
 ### CSRF Tokens
@@ -97,70 +126,91 @@ HMAC-signed tokens bound to session IDs:
 ```rust
 use token_gen::{CsrfToken, SecretKey};
 
-let secret = SecretKey::from_string("csrf-secret");
+let secret = SecretKey::from_string("replace-with-a-random-secret-at-least-32-bytes")?;
 let session_id = "user-session-123";
 
-// Generate token for form
 let token = CsrfToken::generate(&secret, session_id, 32)?;
-
-// Verify on submission
 let claims = token.verify(&secret, session_id, 3600)?;
-println!("Token age: {:?}", claims.age);
+assert_eq!(claims.session_id, session_id);
+
+# Ok::<(), token_gen::TokenError>(())
 ```
 
 ## CLI Usage
 
+The CLI accepts an inline `--secret` for development, but command-line secrets can leak through shell history and process listings. For normal use, load `TOKEN_GEN_SECRET` from a password manager or prompt without echoing it:
+
 ```bash
-# Generate auth token
+read -r -s TOKEN_GEN_SECRET
+export TOKEN_GEN_SECRET
+```
+
+Then run the documented workflows:
+
+<!-- readme-cli-smoke:start -->
+```bash
+# Generate auth tokens
 token-gen auth
 token-gen auth -l 64 -f hex
-token-gen auth -x 3600 -s "secret-key"  # expiring token
+SIGNED_TOKEN="$(token-gen auth -x 3600)"
+token-gen auth --check-expiry "$SIGNED_TOKEN"
 
-# Check if token is expired
-token-gen auth --check-expiry "token-string"
-
-# Generate API key
+# Generate API keys
 token-gen api
 token-gen api -t sk -e test
-token-gen api -n 5 -o json  # generate 5 keys as JSON
+token-gen api -n 5 -o json
 
-# Hash an existing key
-token-gen api --hash "api_live_xxx"
+# Hash and verify an API key
+API_RESULT="$(token-gen api)"
+API_KEY="$(printf '%s\n' "$API_RESULT" | awk '/^key: / {print $2}')"
+API_HASH="$(printf '%s\n' "$API_RESULT" | awk '/^key_hash: / {print $2}')"
+token-gen api --hash "$API_KEY"
+token-gen api --verify "$API_KEY" "$API_HASH"
 
-# Verify key against hash
-token-gen api --verify "api_live_xxx" "sha256:..."
-
-# Generate CSRF token (requires secret)
-token-gen csrf -s "csrf-secret"
-TOKEN_GEN_SECRET="csrf-secret" token-gen csrf
-
-# Verify CSRF token
-token-gen csrf -s "csrf-secret" --verify "token-string"
+# Generate and verify a CSRF token bound to the same application session
+SESSION_ID="user-session-123"
+CSRF_TOKEN="$(token-gen csrf --session-id "$SESSION_ID")"
+token-gen csrf --session-id "$SESSION_ID" --verify "$CSRF_TOKEN"
 ```
+<!-- readme-cli-smoke:end -->
+
+`--session-id` is required for CSRF generation and verification. Verification fails when the supplied session ID differs from the one used to sign the token.
 
 ## API Reference
 
+Until the crate is published, API entries link to usage documentation in this README. Build the full generated API reference locally as described below.
+
 | Type | Description |
 |------|-------------|
-| [`AuthToken`] | Simple or expiring authentication tokens |
-| [`ApiKey`] | Prefixed API keys with hashing support |
-| [`CsrfToken`] | Session-bound HMAC-signed tokens |
-| [`SecretKey`] | Key material for signing operations |
-| [`Format`] | Output encoding (Base64Url, Hex) |
-| [`TokenError`] | Error type for all operations |
+| [`AuthToken`](#auth-tokens) | Simple or expiring authentication tokens |
+| [`ApiKey`](#api-keys) | Prefixed API keys with hashing support |
+| [`CsrfToken`](#csrf-tokens) | Session-bound HMAC-signed tokens |
+| [`SecretKey`](#csrf-tokens) | Key material for signing operations |
+| [`Format`](#auth-tokens) | Output encoding (`Base64Url`, `Hex`) |
+| [`TokenError`](#error-handling) | Error type for all fallible operations |
+
+## Error Handling
+
+Fallible library operations return `Result<_, TokenError>`. Propagate errors with `?`, as in the examples above, or match individual `TokenError` variants when callers need specialized handling.
 
 ## Security Notes
 
 - **Randomness**: Uses `rand::rngs::OsRng` (platform-specific CSPRNG)
-- **Timing attacks**: Constant-time comparison via the `subtle` crate
-- **Minimum entropy**: 16 bytes (128 bits) enforced for all tokens
-- **Key storage**: Never store raw API keys; always store hashes
-- **Secrets**: Use strong, randomly-generated secret keys in production
+- **Timing attacks**: Uses constant-time comparison via the `subtle` crate
+- **Signatures**: Uses HMAC-SHA256 for expiry-bearing auth and CSRF tokens
+- **Password hashing**: Supports configurable scrypt parameters for API key storage
+- **Minimum entropy**: Enforces at least 16 bytes (128 bits) for tokens and signing secrets
+- **Key storage**: Never store raw API keys; store their hashes
+- **Secrets**: Use strong, randomly generated secret keys in production; avoid command-line literals
+
+## Documentation
+
+The crate is unpublished, so docs.rs does not host its API documentation. Build and open the current API documentation locally:
+
+```bash
+cargo doc --all-features --no-deps --open
+```
 
 ## License
 
 MIT
-
-## Documentation
-
-Full API documentation: [docs.rs/token-gen](https://docs.rs/token-gen)

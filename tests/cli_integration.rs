@@ -6,6 +6,9 @@ use std::process::Command;
 
 /// Path to the compiled CLI binary.
 const CLI_PATH: &str = "./target/debug/token-gen";
+const TEST_SECRET: &str = "test-secret-key-12345";
+const OTHER_SECRET: &str = "other-secret-key-1234";
+const TEST_SESSION_ID: &str = "test-session-123";
 
 /// Helper to run the CLI with given arguments.
 ///
@@ -34,6 +37,13 @@ fn run_cli_with_env(args: &[&str], env_key: &str, env_value: &str) -> (String, S
         String::from_utf8_lossy(&output.stderr).to_string(),
         output.status.success(),
     )
+}
+
+/// Run a CSRF command with the standard valid secret and session fixtures.
+fn run_csrf(args: &[&str]) -> (String, String, bool) {
+    let mut csrf_args = vec!["csrf", "-s", TEST_SECRET, "--session-id", TEST_SESSION_ID];
+    csrf_args.extend_from_slice(args);
+    run_cli(&csrf_args)
 }
 
 // =============================================================================
@@ -75,7 +85,7 @@ mod auth_tests {
 
     #[test]
     fn auth_generates_expiring_token() {
-        let (stdout, stderr, success) = run_cli(&["auth", "-x", "3600", "-s", "my-secret-key"]);
+        let (stdout, stderr, success) = run_cli(&["auth", "-x", "3600", "-s", TEST_SECRET]);
         assert!(success, "CLI should succeed, stderr: {}", stderr);
         let token = stdout.trim();
         // Expiring tokens have format: timestamp.nonce.signature
@@ -86,7 +96,7 @@ mod auth_tests {
     #[test]
     fn auth_check_expiry_not_expired() {
         // First generate an expiring token
-        let (token, _, _) = run_cli(&["auth", "-x", "3600", "-s", "my-secret-key"]);
+        let (token, _, _) = run_cli(&["auth", "-x", "3600", "-s", TEST_SECRET]);
         let token = token.trim();
 
         // Check it's not expired
@@ -235,7 +245,7 @@ mod csrf_tests {
 
     #[test]
     fn csrf_generates_token_with_secret() {
-        let (stdout, stderr, success) = run_cli(&["csrf", "-s", "my-secret-key"]);
+        let (stdout, stderr, success) = run_csrf(&[]);
         assert!(success, "CLI should succeed, stderr: {}", stderr);
         let token = stdout.trim();
         // CSRF tokens have format: timestamp.nonce.signature
@@ -245,8 +255,11 @@ mod csrf_tests {
 
     #[test]
     fn csrf_generates_token_with_env_secret() {
-        let (stdout, stderr, success) =
-            run_cli_with_env(&["csrf"], "TOKEN_GEN_SECRET", "env-secret-key");
+        let (stdout, stderr, success) = run_cli_with_env(
+            &["csrf", "--session-id", TEST_SESSION_ID],
+            "TOKEN_GEN_SECRET",
+            TEST_SECRET,
+        );
         assert!(success, "CLI should succeed, stderr: {}", stderr);
         let token = stdout.trim();
         let parts: Vec<&str> = token.split('.').collect();
@@ -256,53 +269,75 @@ mod csrf_tests {
     #[test]
     fn csrf_verify_valid_token() {
         // Generate a token
-        let (token, _, success) = run_cli(&["csrf", "-s", "my-secret-key"]);
+        let (token, _, success) = run_csrf(&[]);
         assert!(success, "Generate should succeed");
         let token = token.trim();
 
         // Verify it
-        let (stdout, stderr, success) = run_cli(&["csrf", "-s", "my-secret-key", "--verify", token]);
+        let (stdout, stderr, success) = run_csrf(&["--verify", token]);
         assert!(success, "CLI should succeed, stderr: {}", stderr);
         assert!(stdout.contains("valid: true"), "Token should be valid");
     }
 
     #[test]
+    fn csrf_rejects_wrong_session_id() {
+        let (token, _, success) = run_csrf(&[]);
+        assert!(success, "Generate should succeed");
+
+        let (stdout, stderr, success) = run_cli(&[
+            "csrf", "-s", TEST_SECRET, "--session-id", "other-session-456", "--verify",
+            token.trim(),
+        ]);
+        assert!(success, "CLI should succeed, stderr: {}", stderr);
+        assert!(stdout.contains("valid: false"), "Token should be session-bound");
+    }
+
+    #[test]
     fn csrf_rejects_wrong_secret() {
         // Generate with one secret
-        let (token, _, _) = run_cli(&["csrf", "-s", "secret-one"]);
+        let (token, _, _) = run_csrf(&[]);
         let token = token.trim();
 
         // Verify with different secret
-        let (stdout, _stderr, success) = run_cli(&["csrf", "-s", "secret-two", "--verify", token]);
+        let (stdout, _stderr, success) = run_cli(&[
+            "csrf", "-s", OTHER_SECRET, "--session-id", TEST_SESSION_ID, "--verify", token,
+        ]);
         assert!(success, "CLI should succeed");
         assert!(stdout.contains("valid: false"), "Token should be invalid with wrong secret");
     }
 
     #[test]
     fn csrf_requires_secret() {
-        let (_stdout, stderr, success) = run_cli(&["csrf"]);
+        let (_stdout, stderr, success) = run_cli(&["csrf", "--session-id", TEST_SESSION_ID]);
         assert!(!success, "Should fail without secret");
         assert!(stderr.contains("Error"), "Should show error");
         assert!(stderr.contains("secret"), "Error should mention secret");
     }
 
     #[test]
+    fn csrf_requires_non_empty_session_id() {
+        let (_stdout, stderr, success) =
+            run_cli(&["csrf", "-s", TEST_SECRET, "--session-id", ""]);
+        assert!(!success, "Should fail with an empty session ID");
+        assert!(stderr.contains("session-id"), "Error should mention session ID");
+    }
+
+    #[test]
     fn csrf_custom_max_age() {
         // Generate token
-        let (token, _, _) = run_cli(&["csrf", "-s", "my-secret-key"]);
+        let (token, _, _) = run_csrf(&[]);
         let token = token.trim();
 
         // Verify with custom max age
-        let (stdout, stderr, success) = run_cli(&[
-            "csrf", "-s", "my-secret-key", "--verify", token, "--max-age", "60",
-        ]);
+        let (stdout, stderr, success) =
+            run_csrf(&["--verify", token, "--max-age", "60"]);
         assert!(success, "CLI should succeed, stderr: {}", stderr);
         assert!(stdout.contains("valid: true"), "Token should be valid");
     }
 
     #[test]
     fn csrf_generates_multiple_tokens() {
-        let (stdout, stderr, success) = run_cli(&["csrf", "-s", "secret", "-n", "5"]);
+        let (stdout, stderr, success) = run_csrf(&["-n", "5"]);
         assert!(success, "CLI should succeed, stderr: {}", stderr);
         let lines: Vec<&str> = stdout.trim().lines().collect();
         assert_eq!(lines.len(), 5, "Should generate 5 tokens");
@@ -369,7 +404,7 @@ mod output_format_tests {
 
     #[test]
     fn csrf_json_output() {
-        let (stdout, stderr, success) = run_cli(&["csrf", "-s", "secret", "-o", "json"]);
+        let (stdout, stderr, success) = run_csrf(&["-o", "json"]);
         assert!(success, "CLI should succeed, stderr: {}", stderr);
         let json: serde_json::Value = serde_json::from_str(&stdout)
             .expect("Should be valid JSON");
@@ -378,10 +413,10 @@ mod output_format_tests {
 
     #[test]
     fn verify_json_output() {
-        let (token, _, _) = run_cli(&["csrf", "-s", "secret"]);
+        let (token, _, _) = run_csrf(&[]);
         let token = token.trim();
 
-        let (stdout, stderr, success) = run_cli(&["csrf", "-s", "secret", "--verify", token, "-o", "json"]);
+        let (stdout, stderr, success) = run_csrf(&["--verify", token, "-o", "json"]);
         assert!(success, "CLI should succeed, stderr: {}", stderr);
         let json: serde_json::Value = serde_json::from_str(&stdout)
             .expect("Should be valid JSON");
@@ -423,7 +458,7 @@ mod error_handling_tests {
 
     #[test]
     fn csrf_missing_secret_error() {
-        let (_stdout, stderr, success) = run_cli(&["csrf"]);
+        let (_stdout, stderr, success) = run_cli(&["csrf", "--session-id", TEST_SESSION_ID]);
         assert!(!success, "Should fail without secret");
         assert!(stderr.contains("Error"), "Should show error");
     }
@@ -450,7 +485,7 @@ mod error_handling_tests {
 
     #[test]
     fn exit_code_failure() {
-        let (_, _, success) = run_cli(&["csrf"]); // Missing secret
+        let (_, _, success) = run_cli(&["csrf", "--session-id", TEST_SESSION_ID]); // Missing secret
         assert!(!success, "Failed command should have non-zero exit code");
     }
 

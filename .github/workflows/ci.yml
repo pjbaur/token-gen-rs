@@ -28,7 +28,11 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
       - uses: Swatinem/rust-cache@v2
-      - name: Run tests
+      - name: Compile-check README Rust examples
+        run: cargo test --all-features --doc
+      - name: Smoke-test README CLI examples
+        run: cargo test --all-features --test readme_examples
+      - name: Run full test suite
         run: cargo test --all-features
 
   clippy:

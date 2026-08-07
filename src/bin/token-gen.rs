@@ -173,9 +173,17 @@ struct CsrfArgs {
     #[arg(short = 'o', long, default_value = "plain")]
     output: OutputFormat,
 
-    /// Secret key (or set TOKEN_GEN_SECRET env var)
+    /// Development-only inline secret; prefer TOKEN_GEN_SECRET
     #[arg(short = 's', long)]
     secret: Option<String>,
+
+    /// Session ID to bind the token to
+    #[arg(
+        long,
+        value_name = "SESSION_ID",
+        value_parser = clap::builder::NonEmptyStringValueParser::new()
+    )]
+    session_id: String,
 
     /// Verify a CSRF token
     #[arg(long, value_name = "TOKEN")]
@@ -397,8 +405,9 @@ fn run_csrf(args: CsrfArgs) -> Result<(), String> {
             .parse()
             .map_err(|e| format!("Failed to parse token: {}", e))?;
 
-        // Use empty session ID for CLI verify (matches Python behavior)
-        let valid = token.verify(&secret, "", args.max_age).is_ok();
+        let valid = token
+            .verify(&secret, &args.session_id, args.max_age)
+            .is_ok();
 
         match args.output {
             OutputFormat::Json => output_json(&VerifyResult { valid }),
@@ -407,10 +416,9 @@ fn run_csrf(args: CsrfArgs) -> Result<(), String> {
         return Ok(());
     }
 
-    // Generate mode - use empty session ID for CLI (matches Python behavior)
     let results: Vec<String> = (0..args.count)
         .map(|_| {
-            let token = CsrfToken::generate(&secret, "", args.length)
+            let token = CsrfToken::generate(&secret, &args.session_id, args.length)
                 .map_err(|e| e.to_string())?;
             Ok(token.to_string())
         })

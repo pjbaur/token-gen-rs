@@ -2,14 +2,13 @@
 name = "token-gen"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.85"
 description = "Cryptographically secure token generation library"
 license = "MIT"
 authors = ["Paul Baur"]
 keywords = ["token", "auth", "csrf", "api-key", "crypto"]
 categories = ["cryptography", "authentication"]
-repository = "https://github.com/paulbaur/token-gen-rs"
 readme = "README.md"
-documentation = "https://docs.rs/token-gen"
 exclude = ["target/", "proptest-regressions/", "benches/"]
 
 [dependencies]
