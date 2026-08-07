@@ -104,7 +104,11 @@ impl CsrfToken {
     /// # Errors
     ///
     /// Returns an error if the length is less than 16 bytes or RNG fails.
-    pub fn generate(secret: &SecretKey, session_id: &str, length: usize) -> Result<Self, TokenError> {
+    pub fn generate(
+        secret: &SecretKey,
+        session_id: &str,
+        length: usize,
+    ) -> Result<Self, TokenError> {
         Self::builder()
             .secret_key(secret)
             .session_id(session_id)
@@ -122,7 +126,12 @@ impl CsrfToken {
     /// # Errors
     ///
     /// Returns an error if the token is invalid, expired, or the signature doesn't match.
-    pub fn verify(&self, secret: &SecretKey, session_id: &str, max_age_secs: u64) -> Result<CsrfClaims, TokenError> {
+    pub fn verify(
+        &self,
+        secret: &SecretKey,
+        session_id: &str,
+        max_age_secs: u64,
+    ) -> Result<CsrfClaims, TokenError> {
         // Check expiry
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -220,7 +229,13 @@ impl FromStr for CsrfToken {
         }
 
         let timestamp = u64::from_be_bytes([
-            ts_bytes[0], ts_bytes[1], ts_bytes[2], ts_bytes[3], ts_bytes[4], ts_bytes[5], ts_bytes[6],
+            ts_bytes[0],
+            ts_bytes[1],
+            ts_bytes[2],
+            ts_bytes[3],
+            ts_bytes[4],
+            ts_bytes[5],
+            ts_bytes[6],
             ts_bytes[7],
         ]);
 
@@ -306,13 +321,13 @@ impl CsrfTokenBuilder {
             });
         }
 
-        let secret = self.secret_key.ok_or_else(|| {
-            TokenError::InvalidFormat("secret key is required".to_string())
-        })?;
+        let secret = self
+            .secret_key
+            .ok_or_else(|| TokenError::InvalidFormat("secret key is required".to_string()))?;
 
-        let session_id = self.session_id.ok_or_else(|| {
-            TokenError::InvalidFormat("session_id is required".to_string())
-        })?;
+        let session_id = self
+            .session_id
+            .ok_or_else(|| TokenError::InvalidFormat("session_id is required".to_string()))?;
 
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -380,9 +395,7 @@ mod tests {
 
     #[test]
     fn builder_requires_secret_key() {
-        let result = CsrfToken::builder()
-            .session_id("session-123")
-            .generate();
+        let result = CsrfToken::builder().session_id("session-123").generate();
 
         assert!(result.is_err());
     }
@@ -390,9 +403,7 @@ mod tests {
     #[test]
     fn builder_requires_session_id() {
         let secret = SecretKey::from_string("test-secret-12345").unwrap();
-        let result = CsrfToken::builder()
-            .secret_key(&secret)
-            .generate();
+        let result = CsrfToken::builder().secret_key(&secret).generate();
 
         assert!(result.is_err());
     }

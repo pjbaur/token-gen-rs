@@ -7,9 +7,7 @@ use serde::Serialize;
 use std::process::ExitCode;
 use std::time::Duration;
 use std::{env, str::FromStr};
-use token_gen::{
-    ApiKey, ApiKeyType, AuthToken, CsrfToken, Environment, Format, SecretKey,
-};
+use token_gen::{ApiKey, ApiKeyType, AuthToken, CsrfToken, Environment, Format, SecretKey};
 
 /// Generate cryptographically secure tokens.
 #[derive(Parser)]
@@ -198,14 +196,14 @@ struct CsrfArgs {
 fn get_secret(secret_arg: Option<&str>) -> Result<SecretKey, String> {
     // Check arg first, then env var
     if let Some(s) = secret_arg {
-        return SecretKey::from_string(s)
-            .map_err(|e| format!("Invalid secret: {}", e));
+        return SecretKey::from_string(s).map_err(|e| format!("Invalid secret: {}", e));
     }
 
     match env::var("TOKEN_GEN_SECRET") {
-        Ok(s) => SecretKey::from_string(&s)
-            .map_err(|e| format!("Invalid secret: {}", e)),
-        Err(_) => Err("Secret required. Use -s/--secret or set TOKEN_GEN_SECRET env var.".to_string()),
+        Ok(s) => SecretKey::from_string(&s).map_err(|e| format!("Invalid secret: {}", e)),
+        Err(_) => {
+            Err("Secret required. Use -s/--secret or set TOKEN_GEN_SECRET env var.".to_string())
+        }
     }
 }
 
@@ -287,8 +285,7 @@ fn run_auth(args: AuthArgs) -> Result<(), String> {
                     .map_err(|e| e.to_string())?;
                 Ok(token.to_string())
             } else {
-                let token =
-                    AuthToken::generate(args.length, format).map_err(|e| e.to_string())?;
+                let token = AuthToken::generate(args.length, format).map_err(|e| e.to_string())?;
                 Ok(token.to_string())
             }
         })
@@ -307,8 +304,7 @@ fn run_auth(args: AuthArgs) -> Result<(), String> {
                     .collect();
                 println!(
                     "{}",
-                    serde_json::to_string(&serde_json::json!({ "tokens": tokens }))
-                        .unwrap()
+                    serde_json::to_string(&serde_json::json!({ "tokens": tokens })).unwrap()
                 );
             }
         }
@@ -381,8 +377,7 @@ fn run_api(args: ApiArgs) -> Result<(), String> {
                     .collect();
                 println!(
                     "{}",
-                    serde_json::to_string(&serde_json::json!({ "tokens": keys }))
-                        .unwrap()
+                    serde_json::to_string(&serde_json::json!({ "tokens": keys })).unwrap()
                 );
             }
         }
@@ -437,8 +432,7 @@ fn run_csrf(args: CsrfArgs) -> Result<(), String> {
                     .collect();
                 println!(
                     "{}",
-                    serde_json::to_string(&serde_json::json!({ "tokens": tokens }))
-                        .unwrap()
+                    serde_json::to_string(&serde_json::json!({ "tokens": tokens })).unwrap()
                 );
             }
         }

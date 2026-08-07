@@ -9,8 +9,8 @@
 use std::collections::HashSet;
 use std::time::Duration;
 use token_gen::{
-    ApiKey, ApiKeyType, AuthToken, CsrfToken, Environment, Format, GeneratedApiKey,
-    HashAlgorithm, SecretKey, TokenError,
+    ApiKey, ApiKeyType, AuthToken, CsrfToken, Environment, Format, GeneratedApiKey, HashAlgorithm,
+    SecretKey, TokenError,
 };
 
 // =============================================================================
@@ -62,7 +62,9 @@ mod token_interop {
         // Both should verify with the same secret
         assert!(auth_token.verify(&shared_secret).is_ok());
 
-        let claims = csrf_token.verify(&shared_secret, "user-session", 3600).unwrap();
+        let claims = csrf_token
+            .verify(&shared_secret, "user-session", 3600)
+            .unwrap();
         assert_eq!(claims.session_id, "user-session");
     }
 
@@ -163,8 +165,8 @@ mod auth_workflows {
     #[test]
     fn api_key_registration_flow() {
         // Registration: Generate API key with hash
-        let generated = GeneratedApiKey::generate_sha256(ApiKeyType::Api, Environment::Live, 32)
-            .unwrap();
+        let generated =
+            GeneratedApiKey::generate_sha256(ApiKeyType::Api, Environment::Live, 32).unwrap();
 
         // Store the hash (simulating database storage)
         let stored_hash = generated.key_hash.clone();
@@ -221,7 +223,9 @@ mod auth_workflows {
 
         // Server verifies the token
         let max_age_secs = 3600; // 1 hour
-        let claims = submitted_token.verify(&secret, session_id, max_age_secs).unwrap();
+        let claims = submitted_token
+            .verify(&secret, session_id, max_age_secs)
+            .unwrap();
 
         // Verify session binding
         assert_eq!(claims.session_id, session_id);
@@ -287,9 +291,18 @@ mod auth_workflows {
         for (i, (key_i, hash_i)) in keys_and_hashes.iter().enumerate() {
             for (j, (_key_j, hash_j)) in keys_and_hashes.iter().enumerate() {
                 if i != j {
-                    assert!(!key_i.verify(hash_j), "Key {} should not verify with hash {}", i, j);
+                    assert!(
+                        !key_i.verify(hash_j),
+                        "Key {} should not verify with hash {}",
+                        i,
+                        j
+                    );
                 } else {
-                    assert!(key_i.verify(hash_i), "Key {} should verify with its own hash", i);
+                    assert!(
+                        key_i.verify(hash_i),
+                        "Key {} should verify with its own hash",
+                        i
+                    );
                 }
             }
         }
@@ -882,7 +895,10 @@ mod uniqueness {
         let mut seen = HashSet::new();
         for _ in 0..100 {
             let token = AuthToken::generate(32, Format::Base64Url).unwrap();
-            assert!(seen.insert(token.as_str().to_string()), "Duplicate token generated");
+            assert!(
+                seen.insert(token.as_str().to_string()),
+                "Duplicate token generated"
+            );
         }
         assert_eq!(seen.len(), 100);
     }
@@ -893,7 +909,10 @@ mod uniqueness {
         let mut seen = HashSet::new();
         for _ in 0..100 {
             let key = ApiKey::generate(ApiKeyType::Api, Environment::Live, 32).unwrap();
-            assert!(seen.insert(key.as_str().to_string()), "Duplicate key generated");
+            assert!(
+                seen.insert(key.as_str().to_string()),
+                "Duplicate key generated"
+            );
         }
         assert_eq!(seen.len(), 100);
     }
@@ -906,7 +925,10 @@ mod uniqueness {
 
         for _ in 0..100 {
             let token = CsrfToken::generate(&secret, "session", 32).unwrap();
-            assert!(seen.insert(token.as_str().to_string()), "Duplicate token generated");
+            assert!(
+                seen.insert(token.as_str().to_string()),
+                "Duplicate token generated"
+            );
         }
         assert_eq!(seen.len(), 100);
     }
@@ -968,7 +990,10 @@ mod concurrency {
         for handle in handles {
             let tokens = handle.join().unwrap();
             for token in tokens {
-                assert!(all_tokens.insert(token), "Duplicate token in concurrent generation");
+                assert!(
+                    all_tokens.insert(token),
+                    "Duplicate token in concurrent generation"
+                );
             }
         }
 

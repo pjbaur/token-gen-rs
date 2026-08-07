@@ -5,7 +5,7 @@
 //! - ApiKey generation and hashing
 //! - CsrfToken generation and verification
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{BenchmarkId, Criterion, Throughput, black_box, criterion_group, criterion_main};
 use std::time::Duration;
 use token_gen::{
     ApiKey, ApiKeyType, AuthToken, CsrfToken, Environment, Format, HashAlgorithm, SecretKey,
@@ -119,13 +119,7 @@ fn bench_api_key_generate(c: &mut Criterion) {
         ] {
             let name = format!("{}_{}", key_name, env_name);
             group.bench_function(&name, |b| {
-                b.iter(|| {
-                    ApiKey::generate(
-                        black_box(key_type),
-                        black_box(env),
-                        black_box(32),
-                    )
-                });
+                b.iter(|| ApiKey::generate(black_box(key_type), black_box(env), black_box(32)));
             });
         }
     }
@@ -217,11 +211,7 @@ fn bench_csrf_token_generate(c: &mut Criterion) {
     for length in [16, 32, 64] {
         group.bench_with_input(BenchmarkId::new("length", length), &length, |b, len| {
             b.iter(|| {
-                CsrfToken::generate(
-                    black_box(&secret),
-                    black_box(session_id),
-                    black_box(*len),
-                )
+                CsrfToken::generate(black_box(&secret), black_box(session_id), black_box(*len))
             });
         });
     }
@@ -234,13 +224,7 @@ fn bench_csrf_token_generate(c: &mut Criterion) {
             BenchmarkId::new("session_len", session_len),
             &sid,
             |b, sid| {
-                b.iter(|| {
-                    CsrfToken::generate(
-                        black_box(&secret),
-                        black_box(sid),
-                        black_box(32),
-                    )
-                });
+                b.iter(|| CsrfToken::generate(black_box(&secret), black_box(sid), black_box(32)));
             },
         );
     }
@@ -259,11 +243,7 @@ fn bench_csrf_token_verify(c: &mut Criterion) {
 
     group.bench_function("verify", |b| {
         b.iter(|| {
-            black_box(&token).verify(
-                black_box(&secret),
-                black_box(session_id),
-                black_box(3600),
-            )
+            black_box(&token).verify(black_box(&secret), black_box(session_id), black_box(3600))
         });
     });
 
@@ -271,11 +251,7 @@ fn bench_csrf_token_verify(c: &mut Criterion) {
     for max_age in [60, 3600, 86400] {
         group.bench_with_input(BenchmarkId::new("max_age", max_age), &max_age, |b, &ma| {
             b.iter(|| {
-                black_box(&token).verify(
-                    black_box(&secret),
-                    black_box(session_id),
-                    black_box(ma),
-                )
+                black_box(&token).verify(black_box(&secret), black_box(session_id), black_box(ma))
             });
         });
     }
@@ -290,11 +266,7 @@ fn bench_csrf_token_verify(c: &mut Criterion) {
             &(tok, sid),
             |b, (tok, sid)| {
                 b.iter(|| {
-                    black_box(tok).verify(
-                        black_box(&secret),
-                        black_box(sid),
-                        black_box(3600),
-                    )
+                    black_box(tok).verify(black_box(&secret), black_box(sid), black_box(3600))
                 });
             },
         );

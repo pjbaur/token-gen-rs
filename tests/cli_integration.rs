@@ -59,7 +59,10 @@ mod auth_tests {
         assert!(success, "CLI should succeed, stderr: {}", stderr);
         assert!(!stdout.trim().is_empty(), "Should output a token");
         // Base64url encoded 32 bytes should be ~43 characters (no padding)
-        assert!(stdout.trim().len() >= 32, "Token should have reasonable length");
+        assert!(
+            stdout.trim().len() >= 32,
+            "Token should have reasonable length"
+        );
     }
 
     #[test]
@@ -80,7 +83,10 @@ mod auth_tests {
         let token = stdout.trim();
         // 32 bytes = 64 hex characters
         assert_eq!(token.len(), 64, "Hex token should be 64 characters");
-        assert!(token.chars().all(|c| c.is_ascii_hexdigit()), "Should be hex");
+        assert!(
+            token.chars().all(|c| c.is_ascii_hexdigit()),
+            "Should be hex"
+        );
     }
 
     #[test]
@@ -102,7 +108,10 @@ mod auth_tests {
         // Check it's not expired
         let (stdout, stderr, success) = run_cli(&["auth", "--check-expiry", token]);
         assert!(success, "CLI should succeed, stderr: {}", stderr);
-        assert!(stdout.contains("expired: false"), "Token should not be expired");
+        assert!(
+            stdout.contains("expired: false"),
+            "Token should not be expired"
+        );
     }
 
     #[test]
@@ -114,7 +123,10 @@ mod auth_tests {
         // Simple tokens never expire
         let (stdout, stderr, success) = run_cli(&["auth", "--check-expiry", token]);
         assert!(success, "CLI should succeed, stderr: {}", stderr);
-        assert!(stdout.contains("expired: false"), "Simple token should never expire");
+        assert!(
+            stdout.contains("expired: false"),
+            "Simple token should never expire"
+        );
     }
 
     #[test]
@@ -148,7 +160,10 @@ mod api_tests {
         assert!(success, "CLI should succeed, stderr: {}", stderr);
         assert!(stdout.contains("key:"), "Should output key");
         assert!(stdout.contains("key_hash:"), "Should output key hash");
-        assert!(stdout.contains("api_live_"), "Default should be api_live prefix");
+        assert!(
+            stdout.contains("api_live_"),
+            "Default should be api_live prefix"
+        );
     }
 
     #[test]
@@ -162,7 +177,10 @@ mod api_tests {
     fn api_generates_staging_environment() {
         let (stdout, stderr, success) = run_cli(&["api", "-e", "staging"]);
         assert!(success, "CLI should succeed, stderr: {}", stderr);
-        assert!(stdout.contains("api_staging_"), "Should have api_staging prefix");
+        assert!(
+            stdout.contains("api_staging_"),
+            "Should have api_staging prefix"
+        );
     }
 
     #[test]
@@ -212,7 +230,10 @@ mod api_tests {
         // Verify the key against the hash
         let (stdout, stderr, success) = run_cli(&["api", "--verify", &key, &hash]);
         assert!(success, "CLI should succeed, stderr: {}", stderr);
-        assert!(stdout.contains("valid: true"), "Key should verify successfully");
+        assert!(
+            stdout.contains("valid: true"),
+            "Key should verify successfully"
+        );
     }
 
     #[test]
@@ -221,9 +242,16 @@ mod api_tests {
         let (_hash_stdout, _, _) = run_cli(&["api", "--hash", "api_test_abc123"]);
 
         // Try to verify with different key
-        let (stdout, _stderr, success) = run_cli(&["api", "--verify", "api_test_different", "sha256:somehash"]);
-        assert!(success, "CLI should succeed (verification returns result, not error)");
-        assert!(stdout.contains("valid: false"), "Wrong key should not verify");
+        let (stdout, _stderr, success) =
+            run_cli(&["api", "--verify", "api_test_different", "sha256:somehash"]);
+        assert!(
+            success,
+            "CLI should succeed (verification returns result, not error)"
+        );
+        assert!(
+            stdout.contains("valid: false"),
+            "Wrong key should not verify"
+        );
     }
 
     #[test]
@@ -285,11 +313,19 @@ mod csrf_tests {
         assert!(success, "Generate should succeed");
 
         let (stdout, stderr, success) = run_cli(&[
-            "csrf", "-s", TEST_SECRET, "--session-id", "other-session-456", "--verify",
+            "csrf",
+            "-s",
+            TEST_SECRET,
+            "--session-id",
+            "other-session-456",
+            "--verify",
             token.trim(),
         ]);
         assert!(success, "CLI should succeed, stderr: {}", stderr);
-        assert!(stdout.contains("valid: false"), "Token should be session-bound");
+        assert!(
+            stdout.contains("valid: false"),
+            "Token should be session-bound"
+        );
     }
 
     #[test]
@@ -300,10 +336,19 @@ mod csrf_tests {
 
         // Verify with different secret
         let (stdout, _stderr, success) = run_cli(&[
-            "csrf", "-s", OTHER_SECRET, "--session-id", TEST_SESSION_ID, "--verify", token,
+            "csrf",
+            "-s",
+            OTHER_SECRET,
+            "--session-id",
+            TEST_SESSION_ID,
+            "--verify",
+            token,
         ]);
         assert!(success, "CLI should succeed");
-        assert!(stdout.contains("valid: false"), "Token should be invalid with wrong secret");
+        assert!(
+            stdout.contains("valid: false"),
+            "Token should be invalid with wrong secret"
+        );
     }
 
     #[test]
@@ -316,10 +361,12 @@ mod csrf_tests {
 
     #[test]
     fn csrf_requires_non_empty_session_id() {
-        let (_stdout, stderr, success) =
-            run_cli(&["csrf", "-s", TEST_SECRET, "--session-id", ""]);
+        let (_stdout, stderr, success) = run_cli(&["csrf", "-s", TEST_SECRET, "--session-id", ""]);
         assert!(!success, "Should fail with an empty session ID");
-        assert!(stderr.contains("session-id"), "Error should mention session ID");
+        assert!(
+            stderr.contains("session-id"),
+            "Error should mention session ID"
+        );
     }
 
     #[test]
@@ -329,8 +376,7 @@ mod csrf_tests {
         let token = token.trim();
 
         // Verify with custom max age
-        let (stdout, stderr, success) =
-            run_csrf(&["--verify", token, "--max-age", "60"]);
+        let (stdout, stderr, success) = run_csrf(&["--verify", token, "--max-age", "60"]);
         assert!(success, "CLI should succeed, stderr: {}", stderr);
         assert!(stdout.contains("valid: true"), "Token should be valid");
     }
@@ -360,7 +406,10 @@ mod output_format_tests {
         assert!(success, "CLI should succeed, stderr: {}", stderr);
         // Plain output should just be the token
         assert!(!stdout.trim().is_empty());
-        assert!(!stdout.contains("token:"), "Plain output shouldn't have label");
+        assert!(
+            !stdout.contains("token:"),
+            "Plain output shouldn't have label"
+        );
     }
 
     #[test]
@@ -368,8 +417,7 @@ mod output_format_tests {
         let (stdout, stderr, success) = run_cli(&["auth", "-o", "json"]);
         assert!(success, "CLI should succeed, stderr: {}", stderr);
         // Should be valid JSON with "token" field
-        let json: serde_json::Value = serde_json::from_str(&stdout)
-            .expect("Should be valid JSON");
+        let json: serde_json::Value = serde_json::from_str(&stdout).expect("Should be valid JSON");
         assert!(json.get("token").is_some(), "Should have token field");
     }
 
@@ -377,8 +425,7 @@ mod output_format_tests {
     fn auth_multiple_json_output() {
         let (stdout, stderr, success) = run_cli(&["auth", "-n", "3", "-o", "json"]);
         assert!(success, "CLI should succeed, stderr: {}", stderr);
-        let json: serde_json::Value = serde_json::from_str(&stdout)
-            .expect("Should be valid JSON");
+        let json: serde_json::Value = serde_json::from_str(&stdout).expect("Should be valid JSON");
         assert!(json.get("tokens").is_some(), "Should have tokens field");
         let tokens = json.get("tokens").unwrap().as_array().unwrap();
         assert_eq!(tokens.len(), 3, "Should have 3 tokens");
@@ -388,16 +435,21 @@ mod output_format_tests {
     fn api_plain_output() {
         let (stdout, stderr, success) = run_cli(&["api"]);
         assert!(success, "CLI should succeed, stderr: {}", stderr);
-        assert!(stdout.contains("key:"), "Plain output should have key label");
-        assert!(stdout.contains("key_hash:"), "Plain output should have hash label");
+        assert!(
+            stdout.contains("key:"),
+            "Plain output should have key label"
+        );
+        assert!(
+            stdout.contains("key_hash:"),
+            "Plain output should have hash label"
+        );
     }
 
     #[test]
     fn api_json_output() {
         let (stdout, stderr, success) = run_cli(&["api", "-o", "json"]);
         assert!(success, "CLI should succeed, stderr: {}", stderr);
-        let json: serde_json::Value = serde_json::from_str(&stdout)
-            .expect("Should be valid JSON");
+        let json: serde_json::Value = serde_json::from_str(&stdout).expect("Should be valid JSON");
         assert!(json.get("key").is_some(), "Should have key field");
         assert!(json.get("key_hash").is_some(), "Should have key_hash field");
     }
@@ -406,8 +458,7 @@ mod output_format_tests {
     fn csrf_json_output() {
         let (stdout, stderr, success) = run_csrf(&["-o", "json"]);
         assert!(success, "CLI should succeed, stderr: {}", stderr);
-        let json: serde_json::Value = serde_json::from_str(&stdout)
-            .expect("Should be valid JSON");
+        let json: serde_json::Value = serde_json::from_str(&stdout).expect("Should be valid JSON");
         assert!(json.get("token").is_some(), "Should have token field");
     }
 
@@ -418,8 +469,7 @@ mod output_format_tests {
 
         let (stdout, stderr, success) = run_csrf(&["--verify", token, "-o", "json"]);
         assert!(success, "CLI should succeed, stderr: {}", stderr);
-        let json: serde_json::Value = serde_json::from_str(&stdout)
-            .expect("Should be valid JSON");
+        let json: serde_json::Value = serde_json::from_str(&stdout).expect("Should be valid JSON");
         assert!(json.get("valid").is_some(), "Should have valid field");
         assert!(json["valid"].as_bool().unwrap(), "Token should be valid");
     }
@@ -428,8 +478,7 @@ mod output_format_tests {
     fn hash_json_output() {
         let (stdout, stderr, success) = run_cli(&["api", "--hash", "api_test_abc", "-o", "json"]);
         assert!(success, "CLI should succeed, stderr: {}", stderr);
-        let json: serde_json::Value = serde_json::from_str(&stdout)
-            .expect("Should be valid JSON");
+        let json: serde_json::Value = serde_json::from_str(&stdout).expect("Should be valid JSON");
         assert!(json.get("hash").is_some(), "Should have hash field");
     }
 }
@@ -453,7 +502,10 @@ mod error_handling_tests {
     fn invalid_subcommand() {
         let (stdout, stderr, success) = run_cli(&["invalid-command"]);
         assert!(!success, "Should fail with invalid command");
-        assert!(!stderr.is_empty() || !stdout.is_empty(), "Should show error");
+        assert!(
+            !stderr.is_empty() || !stdout.is_empty(),
+            "Should show error"
+        );
     }
 
     #[test]

@@ -6,7 +6,7 @@
 use crate::crypto::{constant_time_compare, generate_bytes};
 use crate::encoding::Base64Url;
 use crate::error::TokenError;
-use scrypt::{scrypt, Params};
+use scrypt::{Params, scrypt};
 use sha2::{Digest, Sha256};
 use std::fmt;
 
@@ -74,7 +74,10 @@ impl std::fmt::Debug for ApiKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // Redact the actual key value in debug output to prevent secret leakage
         f.debug_struct("ApiKey")
-            .field("prefix", &self.key_type().map(|t| t.prefix()).unwrap_or("unknown"))
+            .field(
+                "prefix",
+                &self.key_type().map(|t| t.prefix()).unwrap_or("unknown"),
+            )
             .field("redacted", &"[REDACTED]")
             .finish()
     }
@@ -141,9 +144,9 @@ impl ApiKey {
             Params::new(14, 8, 1, 32).map_err(|e| TokenError::CryptoError(e.to_string()))?;
         // Use CSPRNG (generate_bytes) for salt generation
         let salt_bytes = generate_bytes(16)?;
-        let salt: [u8; 16] = salt_bytes.try_into().map_err(|_| {
-            TokenError::CryptoError("failed to create salt array".to_string())
-        })?;
+        let salt: [u8; 16] = salt_bytes
+            .try_into()
+            .map_err(|_| TokenError::CryptoError("failed to create salt array".to_string()))?;
         let mut derived = [0u8; 32];
         scrypt(self.0.as_bytes(), &salt, &params, &mut derived)
             .map_err(|e| TokenError::CryptoError(e.to_string()))?;
@@ -253,7 +256,9 @@ impl std::str::FromStr for ApiKey {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.is_empty() {
-            return Err(TokenError::InvalidFormat("API key cannot be empty".to_string()));
+            return Err(TokenError::InvalidFormat(
+                "API key cannot be empty".to_string(),
+            ));
         }
         Ok(Self(s.to_string()))
     }
@@ -531,8 +536,7 @@ mod tests {
     #[test]
     fn generated_api_key_sha256() {
         let generated =
-            GeneratedApiKey::generate_sha256(ApiKeyType::Public, Environment::Staging, 32)
-                .unwrap();
+            GeneratedApiKey::generate_sha256(ApiKeyType::Public, Environment::Staging, 32).unwrap();
         assert!(generated.key.as_str().starts_with("pk_staging_"));
         assert!(generated.key_hash.starts_with("sha256:"));
         assert!(generated.verify());

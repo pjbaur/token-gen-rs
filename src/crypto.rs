@@ -3,8 +3,8 @@
 //! This module provides a trait-based interface for random number generation,
 //! allowing for dependency injection in testing contexts.
 
-use rand::rngs::OsRng;
 use rand::TryRngCore;
+use rand::rngs::OsRng;
 use subtle::ConstantTimeEq;
 
 use crate::error::TokenError;
@@ -57,7 +57,10 @@ pub fn generate_bytes(length: usize) -> Result<Vec<u8>, TokenError> {
 ///
 /// Returns an error if the requested length is less than `MIN_ENTROPY_BYTES`
 /// or if the RNG fails.
-pub fn generate_bytes_with_rng<R: TokenRng>(rng: &mut R, length: usize) -> Result<Vec<u8>, TokenError> {
+pub fn generate_bytes_with_rng<R: TokenRng>(
+    rng: &mut R,
+    length: usize,
+) -> Result<Vec<u8>, TokenError> {
     if length < MIN_ENTROPY_BYTES {
         return Err(TokenError::InsufficientEntropy {
             requested: length,
@@ -105,13 +108,19 @@ mod tests {
     fn test_rng_generates_deterministic_bytes() {
         let mut rng = TestRng::new();
         let bytes = generate_bytes_with_rng(&mut rng, 16).unwrap();
-        assert_eq!(bytes, vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+        assert_eq!(
+            bytes,
+            vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+        );
     }
 
     #[test]
     fn insufficient_entropy_error() {
         let result = generate_bytes(8);
-        assert!(matches!(result, Err(TokenError::InsufficientEntropy { .. })));
+        assert!(matches!(
+            result,
+            Err(TokenError::InsufficientEntropy { .. })
+        ));
     }
 
     #[test]

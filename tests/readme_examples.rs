@@ -28,11 +28,9 @@ fn documented_cli_workflows_succeed() {
     let cli_dir = std::path::Path::new(CLI_PATH)
         .parent()
         .expect("CLI binary should have a parent directory");
-    let path = std::env::join_paths(
-        std::iter::once(cli_dir.to_path_buf()).chain(std::env::split_paths(
-            &std::env::var_os("PATH").unwrap_or_default(),
-        )),
-    )
+    let path = std::env::join_paths(std::iter::once(cli_dir.to_path_buf()).chain(
+        std::env::split_paths(&std::env::var_os("PATH").unwrap_or_default()),
+    ))
     .expect("CLI path should be valid");
 
     let output = Command::new("bash")

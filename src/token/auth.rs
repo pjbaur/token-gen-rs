@@ -2,7 +2,7 @@
 //!
 //! Provides simple and expiring authentication tokens with builder pattern support.
 
-use crate::crypto::{generate_bytes, generate_bytes_with_rng, constant_time_compare, TokenRng};
+use crate::crypto::{TokenRng, constant_time_compare, generate_bytes, generate_bytes_with_rng};
 use crate::encoding::{Base64Url, Format};
 use crate::error::TokenError;
 use hmac::{Hmac, Mac};
@@ -94,12 +94,20 @@ impl AuthToken {
             .map_err(|e| TokenError::ParseError(e.to_string()))?;
 
         if ts_bytes.len() != 8 {
-            return Err(TokenError::InvalidFormat("invalid timestamp length".to_string()));
+            return Err(TokenError::InvalidFormat(
+                "invalid timestamp length".to_string(),
+            ));
         }
 
         let timestamp = u64::from_be_bytes([
-            ts_bytes[0], ts_bytes[1], ts_bytes[2], ts_bytes[3],
-            ts_bytes[4], ts_bytes[5], ts_bytes[6], ts_bytes[7],
+            ts_bytes[0],
+            ts_bytes[1],
+            ts_bytes[2],
+            ts_bytes[3],
+            ts_bytes[4],
+            ts_bytes[5],
+            ts_bytes[6],
+            ts_bytes[7],
         ]);
 
         let now = SystemTime::now()
@@ -117,7 +125,9 @@ impl AuthToken {
     /// Returns an error if the token is invalid, expired, or the signature doesn't match.
     pub fn verify(&self, secret: &SecretKey) -> Result<(), TokenError> {
         if !self.expiring {
-            return Err(TokenError::InvalidFormat("token is not expiring".to_string()));
+            return Err(TokenError::InvalidFormat(
+                "token is not expiring".to_string(),
+            ));
         }
 
         let parts: Vec<&str> = self.inner.split('.').collect();
@@ -136,8 +146,14 @@ impl AuthToken {
         }
 
         let timestamp = u64::from_be_bytes([
-            ts_bytes[0], ts_bytes[1], ts_bytes[2], ts_bytes[3],
-            ts_bytes[4], ts_bytes[5], ts_bytes[6], ts_bytes[7],
+            ts_bytes[0],
+            ts_bytes[1],
+            ts_bytes[2],
+            ts_bytes[3],
+            ts_bytes[4],
+            ts_bytes[5],
+            ts_bytes[6],
+            ts_bytes[7],
         ]);
 
         // Decode nonce
@@ -200,7 +216,9 @@ impl FromStr for AuthToken {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.is_empty() {
-            return Err(TokenError::InvalidFormat("token cannot be empty".to_string()));
+            return Err(TokenError::InvalidFormat(
+                "token cannot be empty".to_string(),
+            ));
         }
 
         // Check if this looks like an expiring token (3 base64url parts)

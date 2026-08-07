@@ -5,7 +5,7 @@ pub mod encoding;
 pub mod error;
 pub mod token;
 
-pub use crypto::{TokenRng, SystemRng, MIN_ENTROPY_BYTES};
+pub use crypto::{MIN_ENTROPY_BYTES, SystemRng, TokenRng};
 pub use encoding::{Base64Url, Format, Hex};
 pub use error::TokenError;
 pub use token::{

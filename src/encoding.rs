@@ -3,7 +3,7 @@
 //! Provides URL-safe Base64 and hexadecimal encoding with newtype wrappers
 //! for type safety.
 
-use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
+use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use std::fmt;
 use std::str::FromStr;
 
