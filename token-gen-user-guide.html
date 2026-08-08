@@ -1,0 +1,1139 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Local user guide for token-gen, a secure token generation library and CLI for Rust.">
+  <title>token-gen · User Guide</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f1e8;
+      --paper: #fffdf7;
+      --paper-strong: #ffffff;
+      --ink: #17201d;
+      --muted: #68716d;
+      --line: #d9d7cb;
+      --line-strong: #b8b8ad;
+      --accent: #08785d;
+      --accent-dark: #075843;
+      --accent-soft: #dcefe8;
+      --gold: #bd7a17;
+      --gold-soft: #f8e8c7;
+      --danger: #a6402d;
+      --danger-soft: #f8e1db;
+      --code-bg: #14201d;
+      --code-ink: #dff8ed;
+      --shadow: 0 18px 55px rgba(35, 43, 39, .09);
+      --radius: 18px;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      --sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --serif: Iowan Old Style, Charter, "Bitstream Charter", Georgia, serif;
+    }
+
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #0d1513;
+      --paper: #131d1a;
+      --paper-strong: #18231f;
+      --ink: #eef5f1;
+      --muted: #9aa9a3;
+      --line: #2b3934;
+      --line-strong: #40514b;
+      --accent: #54d6ac;
+      --accent-dark: #80e8c4;
+      --accent-soft: #193e32;
+      --gold: #efb455;
+      --gold-soft: #3f321d;
+      --danger: #ff917d;
+      --danger-soft: #45271f;
+      --code-bg: #08110f;
+      --code-ink: #dff8ed;
+      --shadow: 0 20px 60px rgba(0, 0, 0, .28);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 10% 6%, color-mix(in srgb, var(--accent) 10%, transparent) 0, transparent 26rem),
+        var(--bg);
+      color: var(--ink);
+      font: 16px/1.65 var(--sans);
+      text-rendering: optimizeLegibility;
+    }
+
+    a { color: var(--accent-dark); text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+    button, input { font: inherit; }
+    button { color: inherit; }
+    ::selection { background: var(--gold-soft); color: var(--ink); }
+
+    .progress {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 100;
+      height: 4px;
+      background: transparent;
+    }
+    .progress > span {
+      display: block;
+      width: 0;
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--gold));
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 270px minmax(0, 1fr);
+      gap: clamp(28px, 5vw, 76px);
+      width: min(1380px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 28px 0 80px;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      height: calc(100vh - 48px);
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: color-mix(in srgb, var(--paper) 92%, transparent);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow);
+      overflow: auto;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 22px;
+      color: var(--ink);
+      text-decoration: none;
+    }
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: var(--ink);
+      color: var(--paper);
+      font: 700 19px/1 var(--mono);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--paper) 12%, transparent);
+    }
+    .brand strong { display: block; font: 750 18px/1.1 var(--mono); letter-spacing: -.05em; }
+    .brand small { color: var(--muted); font-size: 11px; letter-spacing: .09em; text-transform: uppercase; }
+
+    .search-wrap { position: relative; margin-bottom: 16px; }
+    .search-wrap svg {
+      position: absolute;
+      top: 50%; left: 11px;
+      width: 16px; height: 16px;
+      translate: 0 -50%;
+      color: var(--muted);
+      pointer-events: none;
+    }
+    #guide-search {
+      width: 100%;
+      padding: 9px 10px 9px 34px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--bg);
+      color: var(--ink);
+      outline: 0;
+    }
+    #guide-search:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+    .nav-label {
+      margin: 10px 10px 6px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .toc { display: grid; gap: 2px; }
+    .toc a {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 7px 10px;
+      border-radius: 9px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 650;
+      text-decoration: none;
+      transition: background .16s ease, color .16s ease;
+    }
+    .toc a::before {
+      content: "";
+      width: 6px; height: 6px;
+      border: 1px solid currentColor;
+      border-radius: 50%;
+    }
+    .toc a:hover, .toc a.active { background: var(--accent-soft); color: var(--accent-dark); }
+    .toc a.active::before { background: currentColor; }
+    .toc a.search-hidden { display: none; }
+
+    .side-actions {
+      display: grid;
+      grid-template-columns: 1fr 42px;
+      gap: 8px;
+      margin-top: auto;
+      padding-top: 20px;
+    }
+    .side-actions a, .icon-button {
+      display: grid;
+      place-items: center;
+      min-height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--paper-strong);
+      color: var(--ink);
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .side-actions a { font-size: 12px; font-weight: 750; }
+    .side-actions a:hover, .icon-button:hover { border-color: var(--accent); }
+
+    main { min-width: 0; }
+    .hero {
+      position: relative;
+      min-height: 530px;
+      display: grid;
+      align-content: center;
+      padding: clamp(34px, 7vw, 88px);
+      border-radius: 28px;
+      overflow: hidden;
+      background: #14201d;
+      color: #eef8f4;
+      box-shadow: var(--shadow);
+      isolation: isolate;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -2;
+      background-image:
+        linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: linear-gradient(to bottom right, black, transparent 78%);
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      width: 460px; height: 460px;
+      right: -180px; top: -190px;
+      border: 90px solid rgba(61, 213, 163, .13);
+      border-radius: 50%;
+      box-shadow: 0 0 0 60px rgba(224, 169, 74, .07);
+    }
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 20px;
+      color: #75dcb9;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+    }
+    .eyebrow::before { content: ""; width: 30px; height: 1px; background: currentColor; }
+    .hero h1 {
+      max-width: 780px;
+      margin: 0;
+      font: 600 clamp(54px, 9vw, 108px)/.88 var(--serif);
+      letter-spacing: -.065em;
+    }
+    .hero h1 code { color: #75dcb9; font: inherit; }
+    .hero .lede {
+      max-width: 690px;
+      margin: 28px 0 34px;
+      color: #b9cac4;
+      font-size: clamp(17px, 2vw, 21px);
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 11px; }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 44px;
+      padding: 0 16px;
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 11px;
+      color: #eef8f4;
+      font-weight: 750;
+      text-decoration: none;
+    }
+    .button.primary { border-color: #75dcb9; background: #75dcb9; color: #10201b; }
+    .button:hover { translate: 0 -1px; }
+    .hero-meta {
+      position: absolute;
+      right: 26px; bottom: 20px;
+      color: #71857e;
+      font: 11px/1.4 var(--mono);
+      text-align: right;
+    }
+
+    .chapter {
+      padding: clamp(72px, 10vw, 124px) 0 0;
+      scroll-margin-top: 18px;
+    }
+    .chapter-head {
+      display: grid;
+      grid-template-columns: 70px minmax(0, 1fr);
+      gap: 24px;
+      align-items: start;
+      margin-bottom: 36px;
+    }
+    .chapter-number {
+      padding-top: 9px;
+      border-top: 2px solid var(--accent);
+      color: var(--accent-dark);
+      font: 750 13px/1 var(--mono);
+    }
+    .chapter h2 {
+      margin: 0;
+      font: 600 clamp(38px, 5.5vw, 66px)/1 var(--serif);
+      letter-spacing: -.045em;
+    }
+    .chapter-intro {
+      max-width: 760px;
+      margin: 16px 0 0;
+      color: var(--muted);
+      font-size: 19px;
+    }
+    h3 { margin: 44px 0 14px; font-size: 23px; letter-spacing: -.02em; }
+    h4 { margin: 0 0 7px; font-size: 16px; }
+    p { max-width: 800px; }
+
+    .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .card {
+      padding: 23px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      box-shadow: 0 8px 30px rgba(30, 41, 36, .04);
+    }
+    .card .kicker {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 0 9px;
+      border-radius: 99px;
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+      font: 750 10px/1 var(--mono);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .card p { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
+    .card code, p code, li code, td code {
+      padding: .12em .38em;
+      border-radius: 5px;
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+      font: .88em/1.4 var(--mono);
+    }
+
+    .chooser {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      overflow: hidden;
+      background: var(--paper);
+    }
+    .chooser-controls { padding: 26px; border-right: 1px solid var(--line); }
+    .chooser-controls > p { margin-top: 0; color: var(--muted); }
+    .choice-list { display: grid; gap: 9px; }
+    .choice {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--paper-strong);
+      color: var(--ink);
+      text-align: left;
+      cursor: pointer;
+    }
+    .choice strong { display: block; font-size: 14px; }
+    .choice small { color: var(--muted); }
+    .choice[aria-selected="true"] { border-color: var(--accent); background: var(--accent-soft); }
+    .chooser-result { display: grid; align-content: center; padding: 34px; background: color-mix(in srgb, var(--accent-soft) 45%, var(--paper)); }
+    .chooser-result .result-label { color: var(--muted); font: 750 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+    .chooser-result h3 { margin: 12px 0 8px; font: 600 35px/1 var(--serif); }
+    .chooser-result p { margin: 0; color: var(--muted); }
+    .chooser-result code { display: block; margin-top: 20px; color: var(--accent-dark); font: 700 13px/1.5 var(--mono); overflow-wrap: anywhere; }
+
+    .steps { counter-reset: steps; display: grid; gap: 14px; }
+    .step {
+      counter-increment: steps;
+      display: grid;
+      grid-template-columns: 48px minmax(0, 1fr);
+      gap: 15px;
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: var(--paper);
+    }
+    .step::before {
+      content: counter(steps, decimal-leading-zero);
+      display: grid;
+      place-items: center;
+      width: 42px; height: 42px;
+      border-radius: 50%;
+      background: var(--ink);
+      color: var(--paper);
+      font: 700 12px/1 var(--mono);
+    }
+    .step p { margin: 4px 0 0; color: var(--muted); }
+
+    .code-block {
+      position: relative;
+      margin: 16px 0 24px;
+      border: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
+      border-radius: 15px;
+      background: var(--code-bg);
+      overflow: hidden;
+      box-shadow: 0 12px 35px rgba(3, 12, 9, .11);
+    }
+    .code-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 38px;
+      padding: 0 10px 0 16px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      color: #7d9990;
+      font: 11px/1 var(--mono);
+      letter-spacing: .05em;
+    }
+    .copy {
+      padding: 5px 9px;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 7px;
+      background: rgba(255,255,255,.05);
+      color: #b9cac4;
+      font: 11px/1.2 var(--sans);
+      cursor: pointer;
+    }
+    .copy:hover { border-color: #75dcb9; color: #75dcb9; }
+    pre { margin: 0; padding: 20px; overflow-x: auto; color: var(--code-ink); font: 13px/1.7 var(--mono); tab-size: 2; }
+    .comment { color: #7d9990; }
+    .string { color: #f5c66b; }
+    .type { color: #75dcb9; }
+    .macro { color: #d3a5f2; }
+
+    .callout {
+      position: relative;
+      margin: 22px 0;
+      padding: 18px 20px 18px 54px;
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--accent);
+      border-radius: 12px;
+      background: var(--accent-soft);
+    }
+    .callout::before {
+      content: "✓";
+      position: absolute;
+      left: 19px; top: 18px;
+      color: var(--accent-dark);
+      font-weight: 900;
+    }
+    .callout.warning { border-left-color: var(--gold); background: var(--gold-soft); }
+    .callout.warning::before { content: "!"; color: var(--gold); }
+    .callout.danger { border-left-color: var(--danger); background: var(--danger-soft); }
+    .callout.danger::before { content: "×"; color: var(--danger); }
+    .callout strong { display: block; margin-bottom: 2px; }
+    .callout p { margin: 0; color: color-mix(in srgb, var(--ink) 78%, var(--muted)); }
+
+    .anatomy {
+      display: flex;
+      align-items: stretch;
+      gap: 3px;
+      margin: 22px 0;
+      overflow-x: auto;
+      font: 12px/1.3 var(--mono);
+    }
+    .anatomy span { min-width: max-content; padding: 13px 15px; background: var(--paper); border: 1px solid var(--line); }
+    .anatomy span:first-child { border-radius: 10px 0 0 10px; }
+    .anatomy span:last-child { border-radius: 0 10px 10px 0; }
+    .anatomy b { display: block; margin-top: 5px; color: var(--muted); font: 10px/1 var(--sans); letter-spacing: .07em; text-transform: uppercase; }
+    .anatomy .dot { min-width: auto; display: grid; place-items: center; padding-inline: 8px; border: 0; background: transparent; }
+
+    .table-wrap { margin: 20px 0 30px; border: 1px solid var(--line); border-radius: 14px; overflow-x: auto; background: var(--paper); }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 13px 16px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { background: color-mix(in srgb, var(--accent-soft) 45%, var(--paper)); color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+    tr:last-child td { border-bottom: 0; }
+
+    .workflow {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      margin: 22px 0;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: var(--line);
+      overflow: hidden;
+    }
+    .workflow > div { position: relative; padding: 22px; background: var(--paper); }
+    .workflow > div:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      z-index: 2;
+      right: -14px; top: 50%;
+      display: grid;
+      place-items: center;
+      width: 27px; height: 27px;
+      translate: 0 -50%;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      background: var(--paper);
+      color: var(--accent);
+    }
+    .workflow span { color: var(--accent-dark); font: 750 11px/1 var(--mono); }
+    .workflow strong { display: block; margin: 9px 0 4px; }
+    .workflow p { margin: 0; color: var(--muted); font-size: 13px; }
+
+    .checklist { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 18px; padding: 0; list-style: none; }
+    .checklist li { position: relative; padding: 12px 14px 12px 42px; border: 1px solid var(--line); border-radius: 11px; background: var(--paper); }
+    .checklist li::before { content: "✓"; position: absolute; left: 15px; color: var(--accent); font-weight: 900; }
+
+    details { margin: 10px 0; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
+    summary { padding: 16px 18px; font-weight: 750; cursor: pointer; }
+    details > div { padding: 0 18px 18px; color: var(--muted); }
+    details p { margin: 0; }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      margin-top: 110px;
+      padding: 26px 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .footer strong { color: var(--ink); font-family: var(--mono); }
+    .back-top { text-decoration: none; font-weight: 750; }
+    .search-empty { display: none; margin: 18px 0; padding: 18px; border: 1px dashed var(--line-strong); border-radius: 12px; color: var(--muted); }
+    .search-empty.visible { display: block; }
+
+    @media (max-width: 980px) {
+      .shell { display: block; width: min(840px, calc(100% - 28px)); padding-top: 14px; }
+      .sidebar { position: relative; top: 0; height: auto; margin-bottom: 18px; padding: 12px 14px; }
+      .brand { margin-bottom: 10px; }
+      .search-wrap, .nav-label, .side-actions { display: none; }
+      .toc { display: flex; overflow-x: auto; padding-bottom: 2px; }
+      .toc a { min-width: max-content; }
+      .hero { min-height: 470px; }
+    }
+    @media (max-width: 700px) {
+      .card-grid, .checklist { grid-template-columns: 1fr; }
+      .chooser { grid-template-columns: 1fr; }
+      .chooser-controls { border-right: 0; border-bottom: 1px solid var(--line); }
+      .workflow { grid-template-columns: 1fr; }
+      .workflow > div:not(:last-child)::after { right: 50%; top: auto; bottom: -14px; translate: 50% 0; content: "↓"; }
+      .chapter-head { grid-template-columns: 45px minmax(0, 1fr); gap: 12px; }
+      .hero { padding: 34px 24px; border-radius: 20px; }
+      .hero-meta { display: none; }
+      .footer { display: block; }
+    }
+    @media print {
+      :root { --bg: white; --paper: white; --ink: black; --muted: #444; --line: #bbb; }
+      .progress, .sidebar, .copy, .hero-actions, .back-top { display: none !important; }
+      .shell { display: block; width: 100%; padding: 0; }
+      .hero { min-height: 0; padding: 40px; color: white; box-shadow: none; print-color-adjust: exact; }
+      .chapter { padding-top: 60px; break-before: auto; }
+      .card, .code-block, .callout, details, .table-wrap { break-inside: avoid; box-shadow: none; }
+      details > div { display: block; }
+      .footer { margin-top: 60px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="progress" aria-hidden="true"><span id="progress-bar"></span></div>
+
+  <div class="shell">
+    <aside class="sidebar" aria-label="Guide navigation">
+      <a class="brand" href="#top">
+        <span class="brand-mark">tg</span>
+        <span><strong>token-gen</strong><small>User guide · v0.1.0</small></span>
+      </a>
+
+      <label class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
+        <input id="guide-search" type="search" placeholder="Filter sections…" aria-label="Filter guide sections">
+      </label>
+
+      <div class="nav-label">Contents</div>
+      <nav class="toc">
+        <a href="#choose">Choose a token</a>
+        <a href="#install">Install</a>
+        <a href="#cli">CLI workflows</a>
+        <a href="#rust">Rust library</a>
+        <a href="#security">Security model</a>
+        <a href="#reference">Quick reference</a>
+        <a href="#troubleshooting">Troubleshooting</a>
+      </nav>
+
+      <div class="side-actions">
+        <a href="README.md">Project README</a>
+        <button class="icon-button" id="theme-toggle" type="button" aria-label="Toggle color theme" title="Toggle color theme">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
+        </button>
+      </div>
+    </aside>
+
+    <main id="top">
+      <header class="hero">
+        <p class="eyebrow">Secure tokens, deliberate defaults</p>
+        <h1><code>token-gen</code><br>User Guide</h1>
+        <p class="lede">Generate authentication tokens, prefixed API keys, and session-bound CSRF tokens—from a Rust API or a focused command-line tool.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="#install">Start in 2 minutes <span aria-hidden="true">→</span></a>
+          <a class="button" href="#choose">Choose a token type</a>
+        </div>
+        <div class="hero-meta">LOCAL EDITION<br>RUST 1.85+ · 0.1.0</div>
+      </header>
+
+      <div class="search-empty" id="search-empty">No section title matches. Try “API”, “install”, or “security”.</div>
+
+      <section class="chapter searchable" id="choose" data-search="choose token auth api key csrf reset invite session browser form">
+        <div class="chapter-head">
+          <span class="chapter-number">01</span>
+          <div>
+            <h2>Choose the right token</h2>
+            <p class="chapter-intro">Start from the job the token must perform. Each type encodes different lifecycle and verification assumptions.</p>
+          </div>
+        </div>
+
+        <div class="chooser" aria-label="Token type chooser">
+          <div class="chooser-controls">
+            <p>What are you building?</p>
+            <div class="choice-list" role="listbox" aria-label="Token use case">
+              <button class="choice" type="button" role="option" aria-selected="true" data-result="auth">
+                <strong>One-time or temporary link</strong><small>Password reset, email verification, invite</small>
+              </button>
+              <button class="choice" type="button" role="option" aria-selected="false" data-result="api">
+                <strong>Long-lived machine credential</strong><small>Service integration, developer key</small>
+              </button>
+              <button class="choice" type="button" role="option" aria-selected="false" data-result="csrf">
+                <strong>Browser form protection</strong><small>Bind request to existing session</small>
+              </button>
+            </div>
+          </div>
+          <div class="chooser-result" aria-live="polite">
+            <span class="result-label">Recommended</span>
+            <h3 id="result-title">Auth token</h3>
+            <p id="result-copy">Use random bearer tokens, optionally HMAC-signed with an embedded expiry.</p>
+            <code id="result-command">token-gen auth -x 3600</code>
+          </div>
+        </div>
+
+        <div class="card-grid" style="margin-top: 18px">
+          <article class="card">
+            <span class="kicker">Auth</span>
+            <h3>Opaque by default</h3>
+            <p>A random Base64URL or hex value. Add an expiry and an HMAC signature when temporary access must be self-validating.</p>
+          </article>
+          <article class="card">
+            <span class="kicker">API key</span>
+            <h3>Readable prefix</h3>
+            <p>The key type and environment remain visible—such as <code>sk_test_…</code>—while the secret body stays random.</p>
+          </article>
+          <article class="card">
+            <span class="kicker">CSRF</span>
+            <h3>Session-bound</h3>
+            <p>An HMAC signature covers the timestamp, nonce, and session ID. A different session means verification fails.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="chapter searchable" id="install" data-search="install setup cargo feature cli local path rust version msrv build">
+        <div class="chapter-head">
+          <span class="chapter-number">02</span>
+          <div>
+            <h2>Install locally</h2>
+            <p class="chapter-intro">The crate currently installs from a local checkout. The library carries no CLI dependencies unless the <code>cli</code> feature is enabled.</p>
+          </div>
+        </div>
+
+        <div class="steps">
+          <div class="step">
+            <div><h4>Confirm toolchain</h4><p>Requires Rust 1.85 or newer.</p></div>
+          </div>
+          <div class="step">
+            <div><h4>Choose CLI, library, or both</h4><p>Install the executable globally, add a path dependency to an application, or do both.</p></div>
+          </div>
+          <div class="step">
+            <div><h4>Run one smoke command</h4><p>Generate a default 32-byte Base64URL auth token.</p></div>
+          </div>
+        </div>
+
+        <h3>Install CLI</h3>
+        <div class="code-block">
+          <div class="code-head"><span>shell</span><button class="copy" type="button">Copy</button></div>
+          <pre><code><span class="comment"># From any directory; replace path with checkout location</span>
+cargo install --path /path/to/token-gen-rs --features cli
+
+token-gen --version
+token-gen auth</code></pre>
+        </div>
+
+        <h3>Add Rust library</h3>
+        <div class="code-block">
+          <div class="code-head"><span>shell</span><button class="copy" type="button">Copy</button></div>
+          <pre><code>cargo add token-gen --path /path/to/token-gen-rs</code></pre>
+        </div>
+        <p>Equivalent manifest entry:</p>
+        <div class="code-block">
+          <div class="code-head"><span>Cargo.toml</span><button class="copy" type="button">Copy</button></div>
+          <pre><code>[dependencies]
+token-gen = { path = <span class="string">"/path/to/token-gen-rs"</span> }</code></pre>
+        </div>
+
+        <div class="callout">
+          <strong>Need API documentation offline?</strong>
+          <p>From a project checkout, run <code>cargo doc --all-features --no-deps --open</code>.</p>
+        </div>
+      </section>
+
+      <section class="chapter searchable" id="cli" data-search="cli command auth api csrf options json hash verify expiry secret environment output count length format">
+        <div class="chapter-head">
+          <span class="chapter-number">03</span>
+          <div>
+            <h2>CLI workflows</h2>
+            <p class="chapter-intro">Three subcommands cover generation and verification. Defaults: 32 random bytes, one result, plain output.</p>
+          </div>
+        </div>
+
+        <div class="callout warning">
+          <strong>Keep signing secrets out of command history.</strong>
+          <p><code>--secret</code> exists for development. Prefer <code>TOKEN_GEN_SECRET</code> loaded from a password manager or a silent prompt.</p>
+        </div>
+        <div class="code-block">
+          <div class="code-head"><span>shell · secret setup</span><button class="copy" type="button">Copy</button></div>
+          <pre><code>read -r -s TOKEN_GEN_SECRET
+export TOKEN_GEN_SECRET</code></pre>
+        </div>
+
+        <h3>Auth tokens</h3>
+        <p>Use a simple token when the application stores token state. Use an expiring token when the receiver must validate the signature and deadline.</p>
+        <div class="code-block">
+          <div class="code-head"><span>shell · auth</span><button class="copy" type="button">Copy</button></div>
+          <pre><code><span class="comment"># 32 random bytes, Base64URL</span>
+token-gen auth
+
+<span class="comment"># 64 random bytes, hex, three results</span>
+token-gen auth --length 64 --format hex --count 3
+
+<span class="comment"># HMAC-signed token expiring in one hour</span>
+SIGNED_TOKEN=<span class="string">"$(token-gen auth --expires-in 3600)"</span>
+
+<span class="comment"># Expiry inspection (does not verify signature)</span>
+token-gen auth --check-expiry <span class="string">"$SIGNED_TOKEN"</span></code></pre>
+        </div>
+        <div class="anatomy" aria-label="Expiring auth token anatomy">
+          <span>expiry timestamp<b>Base64URL</b></span><span class="dot">.</span><span>random nonce<b>Base64URL</b></span><span class="dot">.</span><span>HMAC signature<b>Base64URL</b></span>
+        </div>
+        <div class="callout danger">
+          <strong><code>--check-expiry</code> answers only “past deadline?”</strong>
+          <p>It does not authenticate the signature. In Rust applications, call <code>AuthToken::verify(&amp;secret)</code> before trusting the token.</p>
+        </div>
+
+        <h3>API keys</h3>
+        <p>Generation returns the raw key plus a SHA-256 hash. Deliver the raw key once; store the hash. The prefix communicates the intended type and environment.</p>
+        <div class="anatomy" aria-label="API key anatomy">
+          <span>sk<b>Key type</b></span><span class="dot">_</span><span>test<b>Environment</b></span><span class="dot">_</span><span>mY8k…<b>Random body</b></span>
+        </div>
+        <div class="code-block">
+          <div class="code-head"><span>shell · API keys</span><button class="copy" type="button">Copy</button></div>
+          <pre><code><span class="comment"># Default: api_live_… plus storage hash</span>
+token-gen api
+
+<span class="comment"># Secret key for test environment</span>
+token-gen api --key-type sk --env test
+
+<span class="comment"># Automation-friendly JSON</span>
+token-gen api --count 5 --output json
+
+<span class="comment"># Hash existing key, then verify against stored hash</span>
+token-gen api --hash <span class="string">"$API_KEY"</span>
+token-gen api --verify <span class="string">"$API_KEY"</span> <span class="string">"$API_HASH"</span></code></pre>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Flag value</th><th>Meaning</th><th>Example prefix</th></tr></thead>
+            <tbody>
+              <tr><td><code>api</code></td><td>General API credential</td><td><code>api_live_</code></td></tr>
+              <tr><td><code>sk</code></td><td>Secret/server-side credential</td><td><code>sk_test_</code></td></tr>
+              <tr><td><code>pk</code></td><td>Public/publishable identifier</td><td><code>pk_staging_</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>CSRF tokens</h3>
+        <p>Generation and verification require the same secret and the exact same session ID. Default maximum verification age: 3,600 seconds.</p>
+        <div class="code-block">
+          <div class="code-head"><span>shell · CSRF</span><button class="copy" type="button">Copy</button></div>
+          <pre><code>SESSION_ID=<span class="string">"user-session-123"</span>
+CSRF_TOKEN=<span class="string">"$(token-gen csrf --session-id "$SESSION_ID")"</span>
+
+token-gen csrf \
+  --session-id <span class="string">"$SESSION_ID"</span> \
+  --verify <span class="string">"$CSRF_TOKEN"</span> \
+  --max-age 3600</code></pre>
+        </div>
+
+        <h3>JSON output</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Operation</th><th>Single-result shape</th></tr></thead>
+            <tbody>
+              <tr><td>Auth / CSRF generation</td><td><code>{"token":"…"}</code></td></tr>
+              <tr><td>API generation</td><td><code>{"key":"…","key_hash":"sha256:…"}</code></td></tr>
+              <tr><td>API / CSRF verification</td><td><code>{"valid":true}</code></td></tr>
+              <tr><td>Auth expiry check</td><td><code>{"expired":false}</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="chapter searchable" id="rust" data-search="rust library api AuthToken ApiKey CsrfToken SecretKey builder scrypt sha256 verify examples">
+        <div class="chapter-head">
+          <span class="chapter-number">04</span>
+          <div>
+            <h2>Rust library</h2>
+            <p class="chapter-intro">Distinct token types prevent accidental interchange. Builders validate the configuration when <code>generate()</code> runs.</p>
+          </div>
+        </div>
+
+        <h3>Generate auth token</h3>
+        <div class="code-block">
+          <div class="code-head"><span>rust</span><button class="copy" type="button">Copy</button></div>
+          <pre><code><span class="comment">// Random bearer token</span>
+<span class="type">use</span> token_gen::{AuthToken, Format};
+
+<span class="type">let</span> token = AuthToken::generate(32, Format::Base64Url)?;
+println!(<span class="string">"{token}"</span>);</code></pre>
+        </div>
+
+        <h3>Generate and verify expiring auth token</h3>
+        <div class="workflow">
+          <div><span>01 · ISSUE</span><strong>Sign</strong><p>The expiry timestamp and random nonce receive an HMAC-SHA256 signature.</p></div>
+          <div><span>02 · TRANSPORT</span><strong>Send</strong><p>Treat the complete token as a bearer credential over a protected channel.</p></div>
+          <div><span>03 · ACCEPT</span><strong>Verify</strong><p>Validate the signature and expiry using the same secret.</p></div>
+        </div>
+        <div class="code-block">
+          <div class="code-head"><span>rust</span><button class="copy" type="button">Copy</button></div>
+          <pre><code><span class="type">use</span> std::time::Duration;
+<span class="type">use</span> token_gen::{AuthToken, SecretKey};
+
+<span class="type">let</span> secret = SecretKey::from_string(
+    <span class="string">"replace-with-a-random-secret-at-least-16-bytes"</span>,
+)?;
+
+<span class="type">let</span> token = AuthToken::builder()
+    .length(32)
+    .expires_in(Duration::from_secs(3600))
+    .secret_key(&amp;secret)
+    .generate()?;
+
+token.verify(&amp;secret)?; <span class="comment">// signature + expiry</span></code></pre>
+        </div>
+
+        <h3>Issue API key safely</h3>
+        <div class="code-block">
+          <div class="code-head"><span>rust</span><button class="copy" type="button">Copy</button></div>
+          <pre><code><span class="type">use</span> token_gen::{ApiKey, ApiKeyType, Environment, HashAlgorithm};
+
+<span class="type">let</span> generated = ApiKey::builder()
+    .key_type(ApiKeyType::Secret)
+    .environment(Environment::Live)
+    .hash_algorithm(HashAlgorithm::Scrypt)
+    .generate_with_hash()?;
+
+send_once_to_user(generated.key.as_str());
+store_in_database(&amp;generated.key_hash);
+
+<span class="comment">// On later request:</span>
+<span class="type">let</span> presented: ApiKey = request_key.parse()?;
+<span class="macro">assert!</span>(presented.verify(&amp;stored_hash));</code></pre>
+        </div>
+
+        <div class="callout">
+          <strong>SHA-256 or scrypt?</strong>
+          <p>Both support constant-time verification. SHA-256 is fast and is the CLI default. Scrypt adds a work factor and a random salt; select it through the Rust builder.</p>
+        </div>
+
+        <h3>Bind CSRF token to session</h3>
+        <div class="code-block">
+          <div class="code-head"><span>rust</span><button class="copy" type="button">Copy</button></div>
+          <pre><code><span class="type">use</span> token_gen::{CsrfToken, SecretKey};
+
+<span class="type">let</span> secret = SecretKey::from_string(
+    <span class="string">"replace-with-a-random-secret-at-least-16-bytes"</span>,
+)?;
+<span class="type">let</span> session_id = <span class="string">"user-session-123"</span>;
+
+<span class="type">let</span> token = CsrfToken::generate(&amp;secret, session_id, 32)?;
+<span class="type">let</span> claims = token.verify(&amp;secret, session_id, 3600)?;
+
+<span class="macro">assert_eq!</span>(claims.session_id, session_id);</code></pre>
+        </div>
+
+        <h3>Error handling</h3>
+        <p>Fallible operations return <code>Result&lt;_, TokenError&gt;</code>. Propagate with <code>?</code>, or match variants when the caller needs a specialized response.</p>
+        <div class="code-block">
+          <div class="code-head"><span>rust</span><button class="copy" type="button">Copy</button></div>
+          <pre><code><span class="type">use</span> token_gen::TokenError;
+
+<span class="type">match</span> token.verify(&amp;secret) {
+    Ok(()) =&gt; accept_request(),
+    Err(TokenError::Expired) =&gt; ask_for_fresh_token(),
+    Err(TokenError::InvalidSignature) =&gt; reject_request(),
+    Err(error) =&gt; log_validation_error(error),
+}</code></pre>
+        </div>
+      </section>
+
+      <section class="chapter searchable" id="security" data-search="security secret entropy random csprng hmac constant time storage logging command line rotation csrf session">
+        <div class="chapter-head">
+          <span class="chapter-number">05</span>
+          <div>
+            <h2>Security model</h2>
+            <p class="chapter-intro">The library supplies cryptographic primitives and safe lower bounds. The application still owns secret storage, delivery, rotation, authorization, and revocation.</p>
+          </div>
+        </div>
+
+        <ul class="checklist">
+          <li>OS-backed CSPRNG through <code>OsRng</code></li>
+          <li>Minimum 16 random bytes per token</li>
+          <li>HMAC-SHA256 signed auth and CSRF tokens</li>
+          <li>Constant-time signature and hash comparison</li>
+          <li>API keys redact secret body in <code>Debug</code></li>
+          <li>Signing keys require at least 16 bytes</li>
+        </ul>
+
+        <h3>Production checklist</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Do</th><th>Why</th></tr></thead>
+            <tbody>
+              <tr><td>Generate signing secrets with a secure secret manager</td><td>Human-chosen strings often contain less entropy than their length suggests.</td></tr>
+              <tr><td>Store only API key hashes</td><td>Database disclosure should not reveal working bearer credentials.</td></tr>
+              <tr><td>Show the raw API key once</td><td>Reduces copies across logs, support tools, and later responses.</td></tr>
+              <tr><td>Use TLS for token transport</td><td>Bearer tokens grant access to anyone who captures them.</td></tr>
+              <tr><td>Pair prefixes with server-side authorization</td><td><code>pk_</code> or <code>sk_</code> labels communicate intent; they do not enforce permission.</td></tr>
+              <tr><td>Design rotation and revocation</td><td>Cryptographic validity alone cannot disable a compromised credential.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout danger">
+          <strong>Never log raw tokens, keys, or signing secrets.</strong>
+          <p>CLI output intentionally contains credentials. Keep terminal capture, CI logs, shell tracing, and copied JSON in mind.</p>
+        </div>
+      </section>
+
+      <section class="chapter searchable" id="reference" data-search="reference command flags defaults options cheat sheet auth api csrf types environment errors">
+        <div class="chapter-head">
+          <span class="chapter-number">06</span>
+          <div>
+            <h2>Quick reference</h2>
+            <p class="chapter-intro">A compact command and API map for return visits.</p>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Command</th><th>Purpose</th><th>Key options</th></tr></thead>
+            <tbody>
+              <tr><td><code>token-gen auth</code></td><td>Generate bearer or expiring auth token</td><td><code>-l</code> length, <code>-n</code> count, <code>-f</code> format, <code>-x</code> expiry</td></tr>
+              <tr><td><code>token-gen api</code></td><td>Generate, hash, or verify prefixed API key</td><td><code>-t</code> key type, <code>-e</code> env, <code>--hash</code>, <code>--verify</code></td></tr>
+              <tr><td><code>token-gen csrf</code></td><td>Generate or verify session-bound CSRF token</td><td><code>--session-id</code>, <code>--verify</code>, <code>--max-age</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card-grid">
+          <article class="card"><span class="kicker">Defaults</span><h3>32 bytes</h3><p>Token length. Minimum: 16 bytes. Auth encoding: Base64URL. Count: one.</p></article>
+          <article class="card"><span class="kicker">API defaults</span><h3><code>api_live_</code></h3><p>API type, live environment, SHA-256 hash.</p></article>
+          <article class="card"><span class="kicker">CSRF default</span><h3>1 hour</h3><p>Verification max age: 3,600 seconds. A session ID is always required.</p></article>
+        </div>
+
+        <h3>Public Rust types</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Type</th><th>Role</th></tr></thead>
+            <tbody>
+              <tr><td><code>AuthToken</code></td><td>Opaque or signed, expiring authentication token</td></tr>
+              <tr><td><code>ApiKey</code></td><td>Prefixed key with SHA-256 and scrypt hashing support</td></tr>
+              <tr><td><code>CsrfToken</code></td><td>Timestamped HMAC token bound to session ID</td></tr>
+              <tr><td><code>SecretKey</code></td><td>Validated signing key material</td></tr>
+              <tr><td><code>Format</code></td><td><code>Base64Url</code> or <code>Hex</code> auth encoding</td></tr>
+              <tr><td><code>TokenError</code></td><td>Shared error enum for fallible operations</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="chapter searchable" id="troubleshooting" data-search="troubleshooting error secret required insufficient entropy invalid signature expired invalid format command not found help">
+        <div class="chapter-head">
+          <span class="chapter-number">07</span>
+          <div>
+            <h2>Troubleshooting</h2>
+            <p class="chapter-intro">Most failures point to a missing secret, a mismatched verification context, or a length below the security floor.</p>
+          </div>
+        </div>
+
+        <details open>
+          <summary>“Secret required”</summary>
+          <div><p>Expiring auth generation and every CSRF operation need a signing secret. Export <code>TOKEN_GEN_SECRET</code>, or use the development-only <code>--secret</code>. Minimum: 16 UTF-8 bytes.</p></div>
+        </details>
+        <details>
+          <summary>“Insufficient entropy”</summary>
+          <div><p><code>--length</code> is a random-byte count, not an output character count. Set 16 or higher; the default of 32 is recommended.</p></div>
+        </details>
+        <details>
+          <summary>CSRF verification prints <code>valid: false</code></summary>
+          <div><p>Confirm the same secret, the exact same session ID, and an acceptable <code>--max-age</code>. Any mismatch invalidates the token.</p></div>
+        </details>
+        <details>
+          <summary>API verification prints <code>valid: false</code></summary>
+          <div><p>Pass the raw key first and the complete stored hash second. The hash must retain its algorithm prefix—<code>sha256:</code> or <code>scrypt:</code>.</p></div>
+        </details>
+        <details>
+          <summary><code>token-gen: command not found</code></summary>
+          <div><p>Install with <code>cargo install --path /path/to/token-gen-rs --features cli</code>, then ensure the Cargo bin directory appears on <code>PATH</code>.</p></div>
+        </details>
+        <details>
+          <summary>Need the exact current flags</summary>
+          <div><p>Run <code>token-gen --help</code> or <code>token-gen &lt;auth|api|csrf&gt; --help</code>. CLI help remains authoritative for the installed build.</p></div>
+        </details>
+      </section>
+
+      <footer class="footer">
+        <span><strong>token-gen</strong> · local user guide · project version 0.1.0</span>
+        <span>Source: project code and CLI help · <a class="back-top" href="#top">Back to top ↑</a></span>
+      </footer>
+    </main>
+  </div>
+
+  <script>
+    (() => {
+      const root = document.documentElement;
+      const themeToggle = document.getElementById('theme-toggle');
+      let storedTheme = null;
+      try { storedTheme = localStorage.getItem('token-gen-guide-theme'); } catch {}
+      const preferredDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      root.dataset.theme = storedTheme || (preferredDark ? 'dark' : 'light');
+
+      themeToggle.addEventListener('click', () => {
+        root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+        try { localStorage.setItem('token-gen-guide-theme', root.dataset.theme); } catch {}
+      });
+
+      const progressBar = document.getElementById('progress-bar');
+      const updateProgress = () => {
+        const range = document.documentElement.scrollHeight - window.innerHeight;
+        progressBar.style.width = `${range > 0 ? (window.scrollY / range) * 100 : 0}%`;
+      };
+      updateProgress();
+      window.addEventListener('scroll', updateProgress, { passive: true });
+
+      const links = [...document.querySelectorAll('.toc a')];
+      const chapters = [...document.querySelectorAll('.chapter')];
+      const observer = new IntersectionObserver((entries) => {
+        const visible = entries
+          .filter(entry => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (!visible) return;
+        links.forEach(link => link.classList.toggle('active', link.hash === `#${visible.target.id}`));
+      }, { rootMargin: '-15% 0px -70% 0px', threshold: [0, .25, .6] });
+      chapters.forEach(chapter => observer.observe(chapter));
+
+      document.querySelectorAll('.copy').forEach(button => {
+        button.addEventListener('click', async () => {
+          const code = button.closest('.code-block').querySelector('code').innerText;
+          try {
+            await navigator.clipboard.writeText(code);
+            button.textContent = 'Copied';
+          } catch {
+            const selection = window.getSelection();
+            const range = document.createRange();
+            range.selectNodeContents(button.closest('.code-block').querySelector('code'));
+            selection.removeAllRanges();
+            selection.addRange(range);
+            button.textContent = 'Selected';
+          }
+          setTimeout(() => { button.textContent = 'Copy'; }, 1600);
+        });
+      });
+
+      const results = {
+        auth: {
+          title: 'Auth token',
+          copy: 'Use random bearer tokens, optionally HMAC-signed with an embedded expiry.',
+          command: 'token-gen auth -x 3600'
+        },
+        api: {
+          title: 'API key',
+          copy: 'Use a typed, environment-prefixed credential. Deliver raw key once; retain its hash.',
+          command: 'token-gen api -t sk -e live'
+        },
+        csrf: {
+          title: 'CSRF token',
+          copy: 'Use an HMAC-signed token bound to both creation time and exact application session.',
+          command: 'token-gen csrf --session-id "$SESSION_ID"'
+        }
+      };
+      document.querySelectorAll('.choice').forEach(choice => {
+        choice.addEventListener('click', () => {
+          document.querySelectorAll('.choice').forEach(item => item.setAttribute('aria-selected', 'false'));
+          choice.setAttribute('aria-selected', 'true');
+          const result = results[choice.dataset.result];
+          document.getElementById('result-title').textContent = result.title;
+          document.getElementById('result-copy').textContent = result.copy;
+          document.getElementById('result-command').textContent = result.command;
+        });
+      });
+
+      const search = document.getElementById('guide-search');
+      const empty = document.getElementById('search-empty');
+      search.addEventListener('input', () => {
+        const query = search.value.trim().toLowerCase();
+        let matches = 0;
+        links.forEach(link => {
+          const target = document.querySelector(link.hash);
+          const haystack = `${link.textContent} ${target.dataset.search || ''}`.toLowerCase();
+          const match = !query || haystack.includes(query);
+          link.classList.toggle('search-hidden', !match);
+          if (match) matches += 1;
+        });
+        empty.classList.toggle('visible', matches === 0);
+      });
+    })();
+  </script>
+</body>
+</html>
