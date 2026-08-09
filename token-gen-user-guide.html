@@ -1133,7 +1133,7 @@ store_in_database(&amp;generated.key_hash);
           title: 'CSRF token',
           copy: 'Use an HMAC-signed token bound to both creation time and exact application session.',
           command: 'token-gen csrf --session-id "$SESSION_ID"',
-          note: 'Needs <code>TOKEN_GEN_SECRET</code> (or <code>-s</code>) — see CLI workflows below.'
+          note: 'Needs <code>TOKEN_GEN_SECRET</code> (or <code>-s</code>), and <code>$SESSION_ID</code> set to your session ID — see CLI workflows below.'
         }
       };
       document.querySelectorAll('.choice').forEach(choice => {
