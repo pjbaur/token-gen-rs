@@ -5,6 +5,7 @@ edition = "2024"
 rust-version = "1.85"
 description = "Cryptographically secure token generation library"
 license = "MIT"
+repository = "https://github.com/pjbaur/token-gen-rs"
 authors = ["Paul Baur"]
 keywords = ["token", "auth", "csrf", "api-key", "crypto"]
 categories = ["cryptography", "authentication"]
