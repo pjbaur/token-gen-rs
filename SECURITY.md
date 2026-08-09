@@ -154,7 +154,7 @@ Key cryptographic dependencies:
 | `rand` | 0.10 | CSPRNG (SysRng) |
 | `sha2` | 0.10 | SHA-256 hashing |
 | `hmac` | 0.12 | HMAC signatures |
-| `scrypt` | 0.11 | Key derivation |
+| `scrypt` | 0.12 | Key derivation |
 | `subtle` | 2.5 | Constant-time comparison |
 
 Keep dependencies updated to receive security fixes.

@@ -141,7 +141,7 @@ impl ApiKey {
     /// Returns an error if scrypt parameter creation or hashing fails.
     pub fn hash_scrypt(&self) -> Result<String, TokenError> {
         let params =
-            Params::new(14, 8, 1, 32).map_err(|e| TokenError::CryptoError(e.to_string()))?;
+            Params::new(14, 8, 1).map_err(|e| TokenError::CryptoError(e.to_string()))?;
         // Use CSPRNG (generate_bytes) for salt generation
         let salt_bytes = generate_bytes(16)?;
         let salt: [u8; 16] = salt_bytes
@@ -199,8 +199,8 @@ impl ApiKey {
             Err(_) => return false,
         };
 
-        // Create params with output length matching expected hash length
-        let params = match Params::new(n, r, p, expected.len()) {
+        // Output length is taken from the derived-key buffer below
+        let params = match Params::new(n, r, p) {
             Ok(p) => p,
             Err(_) => return false,
         };
