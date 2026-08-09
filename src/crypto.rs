@@ -3,8 +3,8 @@
 //! This module provides a trait-based interface for random number generation,
 //! allowing for dependency injection in testing contexts.
 
-use rand::TryRngCore;
-use rand::rngs::OsRng;
+use rand::TryRng;
+use rand::rngs::SysRng;
 use subtle::ConstantTimeEq;
 
 use crate::error::TokenError;
@@ -20,10 +20,10 @@ pub trait TokenRng {
     fn fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), TokenError>;
 }
 
-/// System random number generator using `OsRng`.
+/// System random number generator using `SysRng`.
 #[derive(Debug, Default)]
 pub struct SystemRng {
-    inner: OsRng,
+    inner: SysRng,
 }
 
 impl SystemRng {

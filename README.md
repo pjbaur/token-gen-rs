@@ -195,7 +195,7 @@ Fallible library operations return `Result<_, TokenError>`. Propagate errors wit
 
 ## Security Notes
 
-- **Randomness**: Uses `rand::rngs::OsRng` (platform-specific CSPRNG)
+- **Randomness**: Uses `rand::rngs::SysRng` (platform-specific CSPRNG)
 - **Timing attacks**: Uses constant-time comparison via the `subtle` crate
 - **Signatures**: Uses HMAC-SHA256 for expiry-bearing auth and CSRF tokens
 - **Password hashing**: Supports configurable scrypt parameters for API key storage

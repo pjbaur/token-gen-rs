@@ -17,7 +17,7 @@ exclude = ["target/", "proptest-regressions/", "benches/"]
 clap = { version = "4", features = ["derive"], optional = true }
 
 # Cryptographic primitives
-rand = "0.9"
+rand = "0.10"
 base64 = "0.22"
 sha2 = "0.10"
 hmac = "0.12"

@@ -8,7 +8,7 @@ This document outlines the security architecture, considerations, and best pract
 
 #### Random Number Generation
 
-- **CSPRNG**: Uses `rand::rngs::OsRng` for all random number generation
+- **CSPRNG**: Uses `rand::rngs::SysRng` for all random number generation
 - **Minimum entropy**: All tokens require a minimum of 16 bytes (128 bits) of entropy
 - **No fallbacks**: The library will fail rather than use weak randomness
 
@@ -151,7 +151,7 @@ Key cryptographic dependencies:
 
 | Crate | Version | Purpose |
 |-------|---------|---------|
-| `rand` | 0.9 | CSPRNG (OsRng) |
+| `rand` | 0.10 | CSPRNG (SysRng) |
 | `sha2` | 0.10 | SHA-256 hashing |
 | `hmac` | 0.12 | HMAC signatures |
 | `scrypt` | 0.11 | Key derivation |
