@@ -197,18 +197,6 @@ impl AsRef<str> for CsrfToken {
     }
 }
 
-/// Error returned when parsing a CSRF token from a string fails.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ParseCsrfTokenError(String);
-
-impl std::fmt::Display for ParseCsrfTokenError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Failed to parse CSRF token: {}", self.0)
-    }
-}
-
-impl std::error::Error for ParseCsrfTokenError {}
-
 impl FromStr for CsrfToken {
     type Err = TokenError;
 
