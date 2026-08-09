@@ -733,8 +733,9 @@ token-gen = { path = <span class="string">"/path/to/token-gen-rs"</span> }</code
           <p><code>--secret</code> exists for development. Prefer <code>TOKEN_GEN_SECRET</code> loaded from a password manager or a silent prompt.</p>
         </div>
         <div class="code-block">
-          <div class="code-head"><span>shell · secret setup</span><button class="copy" type="button">Copy</button></div>
-          <pre><code>read -r -s TOKEN_GEN_SECRET
+          <div class="code-head"><span>bash/zsh · secret setup</span><button class="copy" type="button">Copy</button></div>
+          <pre><code>printf <span class="string">'Secret: '</span>
+read -r -s TOKEN_GEN_SECRET
 export TOKEN_GEN_SECRET</code></pre>
         </div>
 
@@ -816,9 +817,11 @@ token-gen csrf \
               <tr><td>API generation</td><td><code>{"key":"…","key_hash":"sha256:…"}</code></td></tr>
               <tr><td>API / CSRF verification</td><td><code>{"valid":true}</code></td></tr>
               <tr><td>Auth expiry check</td><td><code>{"expired":false}</code></td></tr>
+              <tr><td>API key hashing (<code>--hash</code>)</td><td><code>{"hash":"…"}</code></td></tr>
             </tbody>
           </table>
         </div>
+        <p>Running any generation command with <code>--count</code>/<code>-n</code> greater than one wraps the single-result shape in an envelope instead: <code>{"tokens":[…]}</code>.</p>
 
         <div class="callout warning">
           <strong>Verification and expiry checks always exit 0.</strong>
@@ -976,9 +979,9 @@ store_in_database(&amp;generated.key_hash);
           <table>
             <thead><tr><th>Command</th><th>Purpose</th><th>Key options</th></tr></thead>
             <tbody>
-              <tr><td><code>token-gen auth</code></td><td>Generate bearer or expiring auth token</td><td><code>-l</code> length, <code>-n</code> count, <code>-f</code> format, <code>-x</code> expiry</td></tr>
-              <tr><td><code>token-gen api</code></td><td>Generate, hash, or verify prefixed API key</td><td><code>-t</code> key type, <code>-e</code> env, <code>--hash</code>, <code>--verify</code></td></tr>
-              <tr><td><code>token-gen csrf</code></td><td>Generate or verify session-bound CSRF token</td><td><code>--session-id</code>, <code>--verify</code>, <code>--max-age</code></td></tr>
+              <tr><td><code>token-gen auth</code></td><td>Generate bearer or expiring auth token</td><td><code>-l</code> length, <code>-n</code> count, <code>-f</code> format, <code>-x</code> expiry, <code>-s</code> secret, <code>-o</code> output</td></tr>
+              <tr><td><code>token-gen api</code></td><td>Generate, hash, or verify prefixed API key</td><td><code>-t</code> key type, <code>-e</code> env, <code>--hash</code>, <code>--verify</code>, <code>-o</code> output</td></tr>
+              <tr><td><code>token-gen csrf</code></td><td>Generate or verify session-bound CSRF token</td><td><code>--session-id</code>, <code>--verify</code>, <code>--max-age</code>, <code>-s</code> secret, <code>-o</code> output</td></tr>
             </tbody>
           </table>
         </div>
