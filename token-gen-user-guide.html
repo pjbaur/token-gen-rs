@@ -377,6 +377,7 @@
     .chooser-result h3 { margin: 12px 0 8px; font: 600 35px/1 var(--serif); }
     .chooser-result p { margin: 0; color: var(--muted); }
     .chooser-result code { display: block; margin-top: 20px; color: var(--accent-dark); font: 700 13px/1.5 var(--mono); overflow-wrap: anywhere; }
+    .chooser-result .result-note { margin-top: 10px; font-size: 12px; }
 
     .steps { counter-reset: steps; display: grid; gap: 14px; }
     .step {
@@ -646,6 +647,7 @@
             <h3 id="result-title">Auth token</h3>
             <p id="result-copy">Use random bearer tokens, optionally HMAC-signed with an embedded expiry.</p>
             <code id="result-command">token-gen auth -x 3600</code>
+            <p class="result-note" id="result-note">Needs <code>TOKEN_GEN_SECRET</code> (or <code>-s</code>) — see CLI workflows below.</p>
           </div>
         </div>
 
@@ -737,7 +739,7 @@ export TOKEN_GEN_SECRET</code></pre>
         </div>
 
         <h3>Auth tokens</h3>
-        <p>Use a simple token when the application stores token state. Use an expiring token when the receiver must validate the signature and deadline.</p>
+        <p>Use a simple token when the application stores token state. Use an expiring token when the receiver must validate the signature and deadline. <code>--format</code>/<code>-f</code> applies only to simple tokens — expiring tokens are always Base64URL.</p>
         <div class="code-block">
           <div class="code-head"><span>shell · auth</span><button class="copy" type="button">Copy</button></div>
           <pre><code><span class="comment"># 32 random bytes, Base64URL</span>
@@ -757,7 +759,7 @@ token-gen auth --check-expiry <span class="string">"$SIGNED_TOKEN"</span></code>
         </div>
         <div class="callout danger">
           <strong><code>--check-expiry</code> answers only “past deadline?”</strong>
-          <p>It does not authenticate the signature. In Rust applications, call <code>AuthToken::verify(&amp;secret)</code> before trusting the token.</p>
+          <p>It does not authenticate the signature. In Rust applications, call <code>AuthToken::verify(&amp;secret)</code> before trusting the token. A token with no <code>.</code> separators — including random garbage — is treated as a never-expiring simple token and reports <code>expired: false</code> rather than an error.</p>
         </div>
 
         <h3>API keys</h3>
@@ -816,6 +818,11 @@ token-gen csrf \
               <tr><td>Auth expiry check</td><td><code>{"expired":false}</code></td></tr>
             </tbody>
           </table>
+        </div>
+
+        <div class="callout warning">
+          <strong>Verification and expiry checks always exit 0.</strong>
+          <p><code>api --verify</code>, <code>csrf --verify</code>, and <code>auth --check-expiry</code> report the result in their output (<code>valid: false</code>, <code>expired: true</code>) but the process exits successfully either way. Automation must parse output rather than rely on exit status.</p>
         </div>
       </section>
 
@@ -989,9 +996,14 @@ store_in_database(&amp;generated.key_hash);
             <tbody>
               <tr><td><code>AuthToken</code></td><td>Opaque or signed, expiring authentication token</td></tr>
               <tr><td><code>ApiKey</code></td><td>Prefixed key with SHA-256 and scrypt hashing support</td></tr>
+              <tr><td><code>ApiKeyType</code></td><td><code>Api</code>/<code>Secret</code>/<code>Public</code> prefix selector</td></tr>
+              <tr><td><code>Environment</code></td><td><code>Live</code>/<code>Test</code>/<code>Staging</code> prefix selector</td></tr>
+              <tr><td><code>HashAlgorithm</code></td><td><code>Sha256</code> or <code>Scrypt</code> for API key hashing</td></tr>
+              <tr><td><code>GeneratedApiKey</code></td><td>Builder output: <code>key</code> plus <code>key_hash</code></td></tr>
               <tr><td><code>CsrfToken</code></td><td>Timestamped HMAC token bound to session ID</td></tr>
+              <tr><td><code>CsrfClaims</code></td><td>Verified CSRF fields: <code>timestamp</code>, <code>age</code>, <code>session_id</code></td></tr>
               <tr><td><code>SecretKey</code></td><td>Validated signing key material</td></tr>
-              <tr><td><code>Format</code></td><td><code>Base64Url</code> or <code>Hex</code> auth encoding</td></tr>
+              <tr><td><code>Format</code></td><td><code>Base64Url</code> or <code>Hex</code> encoding for simple auth tokens; expiring tokens are always Base64URL</td></tr>
               <tr><td><code>TokenError</code></td><td>Shared error enum for fallible operations</td></tr>
             </tbody>
           </table>
@@ -1095,17 +1107,20 @@ store_in_database(&amp;generated.key_hash);
         auth: {
           title: 'Auth token',
           copy: 'Use random bearer tokens, optionally HMAC-signed with an embedded expiry.',
-          command: 'token-gen auth -x 3600'
+          command: 'token-gen auth -x 3600',
+          note: 'Needs <code>TOKEN_GEN_SECRET</code> (or <code>-s</code>) — see CLI workflows below.'
         },
         api: {
           title: 'API key',
           copy: 'Use a typed, environment-prefixed credential. Deliver raw key once; retain its hash.',
-          command: 'token-gen api -t sk -e live'
+          command: 'token-gen api -t sk -e live',
+          note: ''
         },
         csrf: {
           title: 'CSRF token',
           copy: 'Use an HMAC-signed token bound to both creation time and exact application session.',
-          command: 'token-gen csrf --session-id "$SESSION_ID"'
+          command: 'token-gen csrf --session-id "$SESSION_ID"',
+          note: 'Needs <code>TOKEN_GEN_SECRET</code> (or <code>-s</code>) — see CLI workflows below.'
         }
       };
       document.querySelectorAll('.choice').forEach(choice => {
@@ -1116,6 +1131,9 @@ store_in_database(&amp;generated.key_hash);
           document.getElementById('result-title').textContent = result.title;
           document.getElementById('result-copy').textContent = result.copy;
           document.getElementById('result-command').textContent = result.command;
+          const note = document.getElementById('result-note');
+          note.innerHTML = result.note;
+          note.style.display = result.note ? '' : 'none';
         });
       });
 
