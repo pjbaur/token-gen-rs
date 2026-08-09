@@ -18,7 +18,7 @@ clap = { version = "4", features = ["derive"], optional = true }
 
 # Cryptographic primitives
 rand = "0.10"
-base64 = "0.22"
+base64 = "0.23"
 sha2 = "0.10"
 hmac = "0.12"
 subtle = "2.5"
