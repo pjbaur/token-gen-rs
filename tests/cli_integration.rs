@@ -130,6 +130,18 @@ mod auth_tests {
     }
 
     #[test]
+    fn auth_check_expiry_accepts_hyphen_leading_token() {
+        // Base64URL tokens can begin with '-'; the value must not be
+        // mistaken for a flag.
+        let (stdout, stderr, success) = run_cli(&["auth", "--check-expiry", "-pXyZabc123_-foo"]);
+        assert!(success, "CLI should succeed, stderr: {}", stderr);
+        assert!(
+            stdout.contains("expired: false"),
+            "Hyphen-leading simple token should never expire"
+        );
+    }
+
+    #[test]
     fn auth_requires_secret_for_expiring_token() {
         let (_stdout, stderr, success) = run_cli(&["auth", "-x", "3600"]);
         assert!(!success, "Should fail without secret");

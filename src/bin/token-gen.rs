@@ -116,7 +116,7 @@ struct AuthArgs {
     expires_in: Option<u64>,
 
     /// Check if a token is expired
-    #[arg(long, value_name = "TOKEN")]
+    #[arg(long, value_name = "TOKEN", allow_hyphen_values = true)]
     check_expiry: Option<String>,
 
     /// Secret key for signing/verifying expiry-bearing auth tokens
@@ -184,7 +184,7 @@ struct CsrfArgs {
     session_id: String,
 
     /// Verify a CSRF token
-    #[arg(long, value_name = "TOKEN")]
+    #[arg(long, value_name = "TOKEN", allow_hyphen_values = true)]
     verify: Option<String>,
 
     /// Max token age in seconds for verify (default: 3600)
