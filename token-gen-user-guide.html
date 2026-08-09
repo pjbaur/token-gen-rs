@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Local user guide for token-gen, a secure token generation library and CLI for Rust.">
   <title>token-gen · User Guide</title>
+  <script>
+    (() => {
+      let stored = null;
+      try { stored = localStorage.getItem('token-gen-guide-theme'); } catch {}
+      const preferredDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.dataset.theme = stored || (preferredDark ? 'dark' : 'light');
+    })();
+  </script>
   <style>
     :root {
       color-scheme: light;
@@ -371,7 +379,7 @@
     }
     .choice strong { display: block; font-size: 14px; }
     .choice small { color: var(--muted); }
-    .choice[aria-selected="true"] { border-color: var(--accent); background: var(--accent-soft); }
+    .choice[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
     .chooser-result { display: grid; align-content: center; padding: 34px; background: color-mix(in srgb, var(--accent-soft) 45%, var(--paper)); }
     .chooser-result .result-label { color: var(--muted); font: 750 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; }
     .chooser-result h3 { margin: 12px 0 8px; font: 600 35px/1 var(--serif); }
@@ -435,7 +443,7 @@
     pre { margin: 0; padding: 20px; overflow-x: auto; color: var(--code-ink); font: 13px/1.7 var(--mono); tab-size: 2; }
     .comment { color: #7d9990; }
     .string { color: #f5c66b; }
-    .type { color: #75dcb9; }
+    .kw { color: #75dcb9; }
     .macro { color: #d3a5f2; }
 
     .callout {
@@ -558,7 +566,10 @@
       :root { --bg: white; --paper: white; --ink: black; --muted: #444; --line: #bbb; }
       .progress, .sidebar, .copy, .hero-actions, .back-top { display: none !important; }
       .shell { display: block; width: 100%; padding: 0; }
-      .hero { min-height: 0; padding: 40px; color: white; box-shadow: none; print-color-adjust: exact; }
+      .hero { min-height: 0; padding: 40px; border: 1px solid #bbb; background: white; color: black; box-shadow: none; }
+      .hero::before, .hero::after { display: none; }
+      .hero h1 code, .eyebrow { color: black; }
+      .hero .lede, .hero-meta { color: #444; }
       .chapter { padding-top: 60px; break-before: auto; }
       .card, .code-block, .callout, details, .table-wrap { break-inside: avoid; box-shadow: none; }
       details > div { display: block; }
@@ -630,14 +641,14 @@
         <div class="chooser" aria-label="Token type chooser">
           <div class="chooser-controls">
             <p>What are you building?</p>
-            <div class="choice-list" role="listbox" aria-label="Token use case">
-              <button class="choice" type="button" role="option" aria-selected="true" data-result="auth">
+            <div class="choice-list" role="group" aria-label="Token use case">
+              <button class="choice" type="button" aria-pressed="true" data-result="auth">
                 <strong>One-time or temporary link</strong><small>Password reset, email verification, invite</small>
               </button>
-              <button class="choice" type="button" role="option" aria-selected="false" data-result="api">
+              <button class="choice" type="button" aria-pressed="false" data-result="api">
                 <strong>Long-lived machine credential</strong><small>Service integration, developer key</small>
               </button>
-              <button class="choice" type="button" role="option" aria-selected="false" data-result="csrf">
+              <button class="choice" type="button" aria-pressed="false" data-result="csrf">
                 <strong>Browser form protection</strong><small>Bind request to existing session</small>
               </button>
             </div>
@@ -842,9 +853,9 @@ token-gen csrf \
         <div class="code-block">
           <div class="code-head"><span>rust</span><button class="copy" type="button">Copy</button></div>
           <pre><code><span class="comment">// Random bearer token</span>
-<span class="type">use</span> token_gen::{AuthToken, Format};
+<span class="kw">use</span> token_gen::{AuthToken, Format};
 
-<span class="type">let</span> token = AuthToken::generate(32, Format::Base64Url)?;
+<span class="kw">let</span> token = AuthToken::generate(32, Format::Base64Url)?;
 println!(<span class="string">"{token}"</span>);</code></pre>
         </div>
 
@@ -856,14 +867,14 @@ println!(<span class="string">"{token}"</span>);</code></pre>
         </div>
         <div class="code-block">
           <div class="code-head"><span>rust</span><button class="copy" type="button">Copy</button></div>
-          <pre><code><span class="type">use</span> std::time::Duration;
-<span class="type">use</span> token_gen::{AuthToken, SecretKey};
+          <pre><code><span class="kw">use</span> std::time::Duration;
+<span class="kw">use</span> token_gen::{AuthToken, SecretKey};
 
-<span class="type">let</span> secret = SecretKey::from_string(
+<span class="kw">let</span> secret = SecretKey::from_string(
     <span class="string">"replace-with-a-random-secret-at-least-16-bytes"</span>,
 )?;
 
-<span class="type">let</span> token = AuthToken::builder()
+<span class="kw">let</span> token = AuthToken::builder()
     .length(32)
     .expires_in(Duration::from_secs(3600))
     .secret_key(&amp;secret)
@@ -875,9 +886,11 @@ token.verify(&amp;secret)?; <span class="comment">// signature + expiry</span></
         <h3>Issue API key safely</h3>
         <div class="code-block">
           <div class="code-head"><span>rust</span><button class="copy" type="button">Copy</button></div>
-          <pre><code><span class="type">use</span> token_gen::{ApiKey, ApiKeyType, Environment, HashAlgorithm};
+          <pre><code><span class="comment">// send_once_to_user, store_in_database, request_key, stored_hash:
+// placeholders for your application code.</span>
+<span class="kw">use</span> token_gen::{ApiKey, ApiKeyType, Environment, HashAlgorithm};
 
-<span class="type">let</span> generated = ApiKey::builder()
+<span class="kw">let</span> generated = ApiKey::builder()
     .key_type(ApiKeyType::Secret)
     .environment(Environment::Live)
     .hash_algorithm(HashAlgorithm::Scrypt)
@@ -887,7 +900,7 @@ send_once_to_user(generated.key.as_str());
 store_in_database(&amp;generated.key_hash);
 
 <span class="comment">// On later request:</span>
-<span class="type">let</span> presented: ApiKey = request_key.parse()?;
+<span class="kw">let</span> presented: ApiKey = request_key.parse()?;
 <span class="macro">assert!</span>(presented.verify(&amp;stored_hash));</code></pre>
         </div>
 
@@ -899,15 +912,15 @@ store_in_database(&amp;generated.key_hash);
         <h3>Bind CSRF token to session</h3>
         <div class="code-block">
           <div class="code-head"><span>rust</span><button class="copy" type="button">Copy</button></div>
-          <pre><code><span class="type">use</span> token_gen::{CsrfToken, SecretKey};
+          <pre><code><span class="kw">use</span> token_gen::{CsrfToken, SecretKey};
 
-<span class="type">let</span> secret = SecretKey::from_string(
+<span class="kw">let</span> secret = SecretKey::from_string(
     <span class="string">"replace-with-a-random-secret-at-least-16-bytes"</span>,
 )?;
-<span class="type">let</span> session_id = <span class="string">"user-session-123"</span>;
+<span class="kw">let</span> session_id = <span class="string">"user-session-123"</span>;
 
-<span class="type">let</span> token = CsrfToken::generate(&amp;secret, session_id, 32)?;
-<span class="type">let</span> claims = token.verify(&amp;secret, session_id, 3600)?;
+<span class="kw">let</span> token = CsrfToken::generate(&amp;secret, session_id, 32)?;
+<span class="kw">let</span> claims = token.verify(&amp;secret, session_id, 3600)?;
 
 <span class="macro">assert_eq!</span>(claims.session_id, session_id);</code></pre>
         </div>
@@ -916,9 +929,10 @@ store_in_database(&amp;generated.key_hash);
         <p>Fallible operations return <code>Result&lt;_, TokenError&gt;</code>. Propagate with <code>?</code>, or match variants when the caller needs a specialized response.</p>
         <div class="code-block">
           <div class="code-head"><span>rust</span><button class="copy" type="button">Copy</button></div>
-          <pre><code><span class="type">use</span> token_gen::TokenError;
+          <pre><code><span class="comment">// Handler functions are placeholders for your application code.</span>
+<span class="kw">use</span> token_gen::TokenError;
 
-<span class="type">match</span> token.verify(&amp;secret) {
+<span class="kw">match</span> token.verify(&amp;secret) {
     Ok(()) =&gt; accept_request(),
     Err(TokenError::Expired) =&gt; ask_for_fresh_token(),
     Err(TokenError::InvalidSignature) =&gt; reject_request(),
@@ -1059,10 +1073,6 @@ store_in_database(&amp;generated.key_hash);
     (() => {
       const root = document.documentElement;
       const themeToggle = document.getElementById('theme-toggle');
-      let storedTheme = null;
-      try { storedTheme = localStorage.getItem('token-gen-guide-theme'); } catch {}
-      const preferredDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      root.dataset.theme = storedTheme || (preferredDark ? 'dark' : 'light');
 
       themeToggle.addEventListener('click', () => {
         root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
@@ -1128,8 +1138,8 @@ store_in_database(&amp;generated.key_hash);
       };
       document.querySelectorAll('.choice').forEach(choice => {
         choice.addEventListener('click', () => {
-          document.querySelectorAll('.choice').forEach(item => item.setAttribute('aria-selected', 'false'));
-          choice.setAttribute('aria-selected', 'true');
+          document.querySelectorAll('.choice').forEach(item => item.setAttribute('aria-pressed', 'false'));
+          choice.setAttribute('aria-pressed', 'true');
           const result = results[choice.dataset.result];
           document.getElementById('result-title').textContent = result.title;
           document.getElementById('result-copy').textContent = result.copy;
