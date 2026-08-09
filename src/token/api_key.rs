@@ -140,8 +140,7 @@ impl ApiKey {
     ///
     /// Returns an error if scrypt parameter creation or hashing fails.
     pub fn hash_scrypt(&self) -> Result<String, TokenError> {
-        let params =
-            Params::new(14, 8, 1).map_err(|e| TokenError::CryptoError(e.to_string()))?;
+        let params = Params::new(14, 8, 1).map_err(|e| TokenError::CryptoError(e.to_string()))?;
         // Use CSPRNG (generate_bytes) for salt generation
         let salt_bytes = generate_bytes(16)?;
         let salt: [u8; 16] = salt_bytes
