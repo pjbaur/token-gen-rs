@@ -20,7 +20,7 @@ clap = { version = "4", features = ["derive"], optional = true }
 rand = "0.10"
 base64 = "0.23"
 sha2 = "0.10"
-hmac = "0.12"
+hmac = "0.13"
 subtle = "2.5"
 scrypt = "0.12"
 hex = "0.4"
